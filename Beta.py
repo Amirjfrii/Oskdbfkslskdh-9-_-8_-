@@ -4,7 +4,7 @@ import asyncio
 
 api_id = 22051826
 api_hash = "713ee0c13c60e46ecf2f9c3af4a7694b"
-phone = "+79957352366"  you prone namber
+phone = "+79957352366"
 client = TelegramClient("sendstars", api_id, api_hash)
 client.session.set_dc(2, "149.154.167.40", 443)
 
