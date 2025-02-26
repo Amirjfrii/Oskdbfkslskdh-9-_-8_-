@@ -12,7 +12,7 @@ owner = 2200903945
 
 # ======================= client ===========================
 bot = TelegramClient('younes', api_id, api_hash)
-bot.start(bot_token="2200260147:AAHCsQ2dDd3okWkd8BGIT4Z6M0ChRFlp9_w")
+bot.start(bot_token="2200260147:AAHCsQ2dDd3okWkd8BGIT4Z6M0ChRFlp9_w/test")
 # =========================== markups ======================
 main_markup =  [
         [Button.text('📤 ارسال اکانت', resize=True)],
