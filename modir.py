@@ -6,7 +6,7 @@ from telethon.tl.functions.channels import InviteToChannelRequest
 
 # ======================= APIs =============================
 api_id = 22051826
-api_hash = "00000000000"
+api_hash = "713ee0c13c60e46ecf2f9c3af4a7694b"
 
 owner = 0000000000
 
