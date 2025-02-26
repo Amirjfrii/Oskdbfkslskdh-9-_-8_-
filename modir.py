@@ -5,7 +5,7 @@ import sqlite3, os, random, json
 from telethon.tl.functions.channels import InviteToChannelRequest
 
 # ======================= APIs =============================
-api_id = 000000000
+api_id = 22051826
 api_hash = "00000000000"
 
 owner = 0000000000
