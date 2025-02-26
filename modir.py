@@ -11,8 +11,8 @@ api_hash = "713ee0c13c60e46ecf2f9c3af4a7694b"
 owner = 2200903945
 
 # ======================= client ===========================
-bot = TelegramClient('younes', api_id, api_hash)
-bot.start(bot_token="2200260147:AAHCsQ2dDd3okWkd8BGIT4Z6M0ChRFlp9_w/test")
+bot = TelegramClient('younes', api_id, api_hash, test_mode=True)
+bot.start(bot_token="2200260147:AAHCsQ2dDd3okWkd8BGIT4Z6M0ChRFlp9_w")
 # =========================== markups ======================
 main_markup =  [
         [Button.text('📤 ارسال اکانت', resize=True)],
