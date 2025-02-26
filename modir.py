@@ -8,7 +8,7 @@ from telethon.tl.functions.channels import InviteToChannelRequest
 api_id = 22051826
 api_hash = "713ee0c13c60e46ecf2f9c3af4a7694b"
 
-owner = 0000000000
+owner = 2200903945
 
 # ======================= client ===========================
 bot = TelegramClient('younes', api_id, api_hash)
