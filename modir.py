@@ -345,7 +345,7 @@ async def TextResponse(client, message):
             step = 'get5DigitsCode'
             await message.reply(f'<b>کد 5 رقمی به شماره {phone_number} ارسال شد ✅</b>', reply_markup=InlineKeyboardMarkup(my_keyboard), quote=True)
 
-    elif step == 'get5DigitsCode' and text.replace(' ', '').isdigit():
+    if step == 'get5DigitsCode' and text.replace(' ', '').isdigit():
         telegram_code = text.replace(' ', '')
     try:
         await tempClient['client'].sign_in(tempClient['number'], tempClient['response'].phone_code_hash, telegram_code)
