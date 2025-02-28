@@ -17,7 +17,7 @@ from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 #           ---         ---         ---         #
 api_id = 23703937 # main api id from my.telegram.org/apps
 api_hash = '779a983cfcccef536bbfd5ec66deb627' # main api hash from my.telegram.org/apps
-bot_token = '2200260147:AAFGYLlq8nIhQEzK3jqBThTB-yVpq2Gn9MY/test' # main bot token from @botFather
+bot_token = '2200260147:AAFGYLlq8nIhQEzK3jqBThTB-yVpq2Gn9MY' # main bot token from @botFather
 bot_admins = [1495973057, 2200903945] # admin userID
 #           ---         ---         ---         #
 sleeping = 2 # main sleep time in sec ***[DO NOT EDIT]***
