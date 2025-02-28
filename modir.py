@@ -328,22 +328,22 @@ async def TextResponse(client, message):
         [InlineKeyboardButton('🔙', callback_data='backToMenu')],
     ]
 
-#                       Add Account                       #
-    if step == 'getPhoneForLogin' and text.replace('+', '').replace(' ', '').replace('-', '').isdigit():
-        phone_number = text.replace('+', '').replace(' ', '').replace('-', '')
-        if os.path.isfile(f'sessions/{phone_number}.session'):
-            await message.reply('<b>این شماره از قبل در پوشه sessions سرور موجود است !</b>', reply_markup=InlineKeyboardMarkup(my_keyboard), quote=True)
+#                       Add Account                       #if step == 'getPhoneForLogin' and text.replace('+', '').replace(' ', '').replace('-', '').isdigit():
+    phone_number = text.replace('+', '').replace(' ', '').replace('-', '')
+    if os.path.isfile(f'sessions/{phone_number}.session'):
+        await message.reply('<b>این شماره از قبل در پوشه sessions سرور موجود است !</b>', reply_markup=InlineKeyboardMarkup(my_keyboard), quote=True)
+    else:
+        tempClient['number'] = phone_number
+        # ایجاد کلاینت با test_mode=True فقط برای ارسال کد
+        tempClient['client'] = Client(f'sessions/{phone_number}', int(api_id), api_hash, test_mode=True)
+        await tempClient['client'].connect()
+        try:
+            tempClient['response'] = await tempClient['client'].send_code(phone_number)
+        except (errors.BadRequest, errors.PhoneNumberBanned, errors.PhoneNumberFlood, errors.PhoneNumberInvalid):
+            await message.reply('<b>خطایی رخ داد !</b>', reply_markup=InlineKeyboardMarkup(my_keyboard), quote=True)
         else:
-            tempClient['number'] = phone_number
-            tempClient['client'] = Client(f'sessions/{phone_number}', int(api_id), api_hash)
-            await tempClient['client'].connect()
-            try :
-                tempClient['response'] = await tempClient['client'].send_code(phone_number)
-            except (errors.BadRequest, errors.PhoneNumberBanned, errors.PhoneNumberFlood, errors.PhoneNumberInvalid):
-                await message.reply('<b>خطایی رخ داد !</b>', reply_markup=InlineKeyboardMarkup(my_keyboard), quote=True)
-            else:
-                step = 'get5DigitsCode'
-                await message.reply(f'<b>کد 5 رقمی به شماره {phone_number} ارسال شد ✅</b>', reply_markup=InlineKeyboardMarkup(my_keyboard), quote=True)
+            step = 'get5DigitsCode'
+            await message.reply(f'<b>کد 5 رقمی به شماره {phone_number} ارسال شد ✅</b>', reply_markup=InlineKeyboardMarkup(my_keyboard), quote=True)
 
     elif step == 'get5DigitsCode' and text.replace(' ', '').isdigit():
         telegram_code = text.replace(' ', '')
