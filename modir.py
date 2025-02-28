@@ -377,7 +377,7 @@ async def TextResponse(client, message):
         step = 'SessionPasswordNeeded'
         await message.reply('<b>لطفا رمز تایید دو مرحله ای را وارد نمایید :</b>', reply_markup=InlineKeyboardMarkup(my_keyboard), quote=True)
 
-    elif step == 'SessionPasswordNeeded':
+    if step == 'SessionPasswordNeeded':
         twoFaPass = text
         try :
             await tempClient['client'].check_password(twoFaPass)
