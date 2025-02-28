@@ -1,390 +1,847 @@
-from telethon.sync import TelegramClient,functions, events, errors
-from telethon.tl.custom import Button
-from telethon.sessions import StringSession
-import sqlite3, os, random, json
-from telethon.tl.functions.channels import InviteToChannelRequest
+#!/usr/bin/env python
+# -*- coding: utf-8 -*- 
 
-# ======================= APIs =============================
-api_id = 22051826
-api_hash = "713ee0c13c60e46ecf2f9c3af4a7694b"
+# ┌──────────────────────────────────────┐
+# │                                   │
+# │   > installing guide :               │
+# │      $ pip install pyrogram==2.0.41  │
+# │      $ pip install asyncio           │
+# └──────────────────────────────────────┘
 
-owner = 2200903945
+import os, random, asyncio, time
+from pyrogram import Client, filters, errors
+from pyrogram.raw import functions, types
+from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 
-# ======================= client ===========================
-bot = TelegramClient('younes', api_id, api_hash)
-bot.start(bot_token="2200260147:AAFaW4Czv-XltsmXoUrPdHDPROIpr1sxg3M/test")
-# =========================== markups ======================
-main_markup =  [
-        [Button.text('📤 ارسال اکانت', resize=True)],
-        [Button.text('☎️ پشتیبانی', resize=True), Button.text('👤 حساب کاربری', resize=True)],
-        [Button.text('✅ تسویه حساب', resize=True)],
-    ]
-admin_markup =  [
-        [Button.text('🔆 ثبت سفارش 🔆', resize=True)],
-        [Button.text('🌐 افزودن پروکسی 🌐', resize=True), Button.text('👤 امار ربات 👤', resize=True)],
-        [Button.text('🔙 بازگشت', resize=True)],
-    ] 
-cancel_markup =  [
-        [Button.text('🔙 بازگشت', resize=True)],
-    ]
-admin_ancel_markup =  [
-        [Button.text('🔙 برگشت', resize=True)],
-    ]
-# ======================= db settings ======================
-conn = sqlite3.connect("data.db")
-cursor = conn.cursor()
-cursor.execute("CREATE TABLE IF NOT EXISTS `users` (`user_id` BIGINT(10), `step` VARCHAR(1000), `balance` INT(5) DEFAULT 0, `is_admin` BOOLEAN DEFAULT(0));")
-cursor.execute("CREATE TABLE IF NOT EXISTS `sessions` (`number` VARCHAR(100), `proxy` VARCHAR(255), `password` text(10), `verifaid` BOOLEAN DEFAULT(0));")
-cursor.execute("CREATE TABLE IF NOT EXISTS `orders` (`hash` VARCHAR(10), `needen_count` INT(10), `sent_count` INT(10), `dest_id` VARCHAR(255));")
-cursor.execute("CREATE TABLE IF NOT EXISTS `proxies` (`proxy` VARCHAR(1000), `used_count` INT(3));")
-conn.commit()
-# ==================== helper funcs ========================
-def query(query):
-    result = cursor.execute(query)
-    conn.commit()
-    return result
 
-def insert_user(user):
-    cursor.execute(f"INSERT INTO `users` (`user_id`, `step`) VALUES ('{user}', 'none');")
+#           ---         ---         ---         #
+api_id = 23703937 # main api id from my.telegram.org/apps
+api_hash = '779a983cfcccef536bbfd5ec66deb627' # main api hash from my.telegram.org/apps
+bot_token = '2200260147:AAFGYLlq8nIhQEzK3jqBThTB-yVpq2Gn9MY/test' # main bot token from @botFather
+bot_admins = [1495973057, 2200903945] # admin userID
+#           ---         ---         ---         #
+sleeping = 2 # main sleep time in sec ***[DO NOT EDIT]***
+step = None # current step ***[DO NOT EDIT]***
+tempClient = dict() # temporary client holder ***[DO NOT EDIT]***
+isWorking = list() # Temporary Active Eval Names ***[DO NOT EDIT]***
+#           ---         ---         ---         #
 
-def set_step(user, step):
-    query(f"UPDATE `users` SET `step` = '{step}' WHERE `user_id` = '{user}'")
 
-def make_hash():
-    chars = list("qwertyuioplkjhgfdsazxcvbnm")
-    random.shuffle(chars)
-    order_hash = "".join(chars[0:10])
-    return order_hash
+if not os.path.isdir('sessions') :
+    os.mkdir('sessions')
 
-def get_proxy():
-    proxies = cursor.execute("SELECT * FROM `proxies`").fetchall()
-    if not len(proxies):
-        return False
-    proxies.sort(key=lambda x : x[1])
-    proxy = proxies[0]
-    return proxy
 
-def delete_acc(phone):
-    query(f"DELETE FROM `sessions` WHERE `number` = '{phone}' LIMIT 1")
-    os.remove(f"sessions/{phone}.session")
+if not os.path.isfile('app.txt') :
+    with open('app.txt', 'w', encoding='utf-8') as file:
+        file.write(str(api_id) + ' ' + api_hash)
 
-def make_hash():
-    letters = list("1234567890qwertyuioplkjhgfdsazxcvbnm")
-    random.shuffle(letters)
-    return "".join(letters[0:5])
 
-async def is_signed_up(jtext):
+async def randomString() -> str:
+    '''Return a random string'''
+    size = random.randint(4, 8)
+    return ''.join(random.choice('abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVLXYZ') for _ in range(size))
+
+
+async def randomAPP():
+    with open('app.txt', 'r', encoding='utf-8') as file:
+        file = file.read().split('\n')
+        app_id, app_hash = random.choice(file).split()
+    return app_id, app_hash
+
+
+async def accountList() :
+    return [myFile.split('.')[0] for myFile in os.listdir('sessions') if os.path.isfile(os.path.join('sessions', myFile))]
+
+
+async def remainTime(TS):
+    TS = time.time() - TS
+    if TS < 60 :
+        return str(int(TS)) + ' ثانیه'
+    else :
+        min = int(TS/60)
+        sec = TS%60
+        return str(int(min)) + ' دقیقه و ' + str(int(sec)) + ' ثانیه'
+
+
+bot = Client(
+    "LampStack",
+    bot_token = bot_token,
+    api_id = api_id,
+    api_hash = api_hash,
+    test_mode=True
+)
+
+
+try :
+    os.system("clear")
+except :
+    os.system("cls")
+print('Bot is Running ...')
+
+
+#           StartCommand            #
+@bot.on_message(filters.command(['start', 'cancel']) & filters.private & filters.user(bot_admins))
+async def StartResponse(client, message):
+    global step, tempClient, isWorking
     try:
-        s = json.loads(jtext.to_json())
-        if s['_'] == 'AuthorizationSignUpRequired':
-            return False
-        else:
-            return True
-    except Exception:
-        return True
-# ====================== main function =====================
-@bot.on(events.NewMessage)
-async def answer(event):
-    message = event.message
-    text = event.raw_text
-    chat_id = event.sender_id
-    
-    if chat_id == owner:
-        main_markup.append([Button.text('💫 پنل مدیریت', resize=True)])
-    # ======================================================
-    insert_user(chat_id)
-    step = cursor.execute(f"SELECT `step` FROM `users` WHERE `user_id` = '{chat_id}'").fetchone()[0]
-    if text.lower() == '/start':
-        await event.reply('👋 سلام خوش اومدی .  \n\n👈 برای ادامه از منوی زیر انتخاب کن :', buttons=main_markup)
-        set_step(chat_id, "none")
-    elif text == "🔙 بازگشت":
-        await event.reply('🏠 برگشتیم به منوی اصلی !\n\n👈 برای ادامه از منوی زیر انتخاب کن :', buttons=main_markup)
-        set_step(chat_id, "none")
-    # ==================================================
-    elif text == "💫 پنل مدیریت":
-        set_step(chat_id, "none")
-        await event.reply(f"✅ به پنل مدیریت خوش آمدید !", buttons=admin_markup)
-    elif text == "🔙 برگشت":
-        set_step(chat_id, "none")
-        await event.reply(f"✅ برگشتیم به منوی اصلی !", buttons=admin_markup)
-    # ==================================================
-    elif text == "👤 امار ربات 👤":
-        count = len( cursor.execute("SELECT * FROM `sessions` WHERE `verifaid` = '1'").fetchall() )
-        await event.reply(f'👤 ربات شما دارای {count} اکانت سالم می باشد ... !', buttons=admin_markup)
-        set_step(chat_id, "none")
-    # ==================================================
-    elif text == "📤 ارسال اکانت":
-        await event.reply('📞 لطفا شماره ی اکانت را ارسال نمایید :\n\n👈 نمونه : +989120000000', buttons=cancel_markup)
-        set_step(chat_id, "send_account")
-    elif step == "send_account":
-        if text.startswith("+"):
-            await event.reply('♻️ در حال پردازش...\n🙏 لطفا منتظر بمانید .', buttons=cancel_markup)
-            phone = text.replace(" ", "")
+        tempClient['client'].disconnect()
+    except:
+        pass
+    tempClient = {}
+    step = None
+    my_keyboard = [
+        [InlineKeyboardButton('افزودن اکانت ➕', callback_data='addAccount'), InlineKeyboardButton('✖️ حذف اکانت', callback_data='removeAccount')],
+        [InlineKeyboardButton('عملیات عضویت ⚪️', callback_data='joinEval'), InlineKeyboardButton('⚪️ عملیات لفت', callback_data='leftEval')],
+        [InlineKeyboardButton('عملیات ویو پست ⚫️', callback_data='viewEval'), InlineKeyboardButton('⚫️ عملیات ری اکشن پست', callback_data='reActionEval')],
+        [InlineKeyboardButton('عملیات نظرسنجی 🔴', callback_data='voteEval'), InlineKeyboardButton('🔴 عملیات ریپورت پست', callback_data='reportPostPublic')],
+        [InlineKeyboardButton('🟡 عملیات بلاک کاربر 🟡', callback_data='blockEval')],
+        [InlineKeyboardButton('لیست اکانت ها 📊', callback_data='accountsList'), InlineKeyboardButton('♻️ بررسی اکانت ها', callback_data='checkAccounts')],
+        [InlineKeyboardButton('تنظیم زمان 🕠', callback_data='setTime'), InlineKeyboardButton('📛 لغو تمام عملیات ها', callback_data='endAllEvals')],
+    ]
+    await message.reply('<b>> به منوی اصلی خوش آمدید :</b>', reply_markup=InlineKeyboardMarkup(my_keyboard), quote=True)
 
-            proxy = get_proxy()
-            if not proxy:
-                await event.reply('‼️ لطفا ابتدا یک پروکسی به ربات اضافه نموده و سپس اکانت ارسال کنید ... !', buttons=main_markup)
-                set_step(chat_id, "none")
-                return
+#           StopEval            #
+@bot.on_message(filters.regex('^/stop_\w+') & filters.private & filters.user(bot_admins))
+async def StopEval(client, message):
+    global step, isWorking
+    my_keyboard = [
+        [InlineKeyboardButton('🔙', callback_data='backToMenu')],
+    ]
+    evalID = message.text.replace('/stop_', '')
+    if evalID in isWorking:
+        isWorking.remove(evalID)
+        await message.reply(f'<b>عملیات با شناسه {evalID} با موفقیت خاتمه یافت ✅</b>', reply_markup=InlineKeyboardMarkup(my_keyboard), quote=True)
+    else:
+        await message.reply(f'<b>عملیات موردنظر یافت نشد !</b>', reply_markup=InlineKeyboardMarkup(my_keyboard), quote=True)
 
 
-            proxy = proxy[0]
-            IP, port, username, password = proxy.split(":")
-            print(IP, port, username, password)
-            account = TelegramClient(f"sessions/{phone}", api_id , api_hash, proxy=("socks5", IP, int(port), True, username, password))
 
-            await account.connect()
-            if await account.is_user_authorized():
-                await bot.send_message(chat_id, f'❌ شماره در حال حاضر بر روی ربات موجود است ... !\n🙏 لطفا شماره ی دیگری را ارسال کنید :')
-                return
+#           callback query            #
+@bot.on_callback_query()
+async def callbackQueries(client, query):
+    global step, bot_admins, tempClient, isWorking, sleeping
+    chat_id = query.message.chat.id
+    message_id = query.message.id
+    data = query.data
+    query_id = query.id
+    if chat_id in bot_admins:
+        if data == 'backToMenu':
             try:
-                auth = await account.send_code_request(phone, force_sms=False, test_mode=True)
-                set_step(chat_id, f'auth1:{phone}:{auth.phone_code_hash}')
-                await bot.send_message(chat_id, f'🔢 کد دریافتی بر روی شماره {phone} را ارسال نمایید.')
-                query(f"INSERT INTO `sessions` (`number`, `proxy`, `password`, `verifaid`) VALUES ('{phone}', '{proxy}', NULL, '0');")
-            except errors.PhoneNumberBannedError:
-                await bot.send_message(chat_id, f'⚠️خطا در ارسال کد به شماره {phone}\nشماره شما از تلگرام مسدود شده است !\n🙏 لطفا شماره ی دیگری را ارسال کنید :')
-                await account.disconnect()
-                os.remove(f'sessions/{phone}.session')
-            except errors.PhoneNumberInvalidError:
-                await bot.send_message(chat_id, f'⚠️ شماره {phone} اشتباه است.')
-                await account.disconnect()
-                os.remove(f'sessions/{phone}.session')
-            except errors.FloodWaitError as e3:
-                await bot.send_message(chat_id, f'⏳ شماره {phone} از سمت تلگرام محدود شده است و تا {e3.seconds} ثانیه دیگر قابل ثبت نیست.')
-                await account.disconnect()
-                os.remove(f'sessions/{phone}.session')
-            except errors.PhoneNumberOccupiedError:
-                await bot.send_message(chat_id, '⚠️خطا در ارسال کد !')
-                await account.disconnect()
-                os.remove(f'sessions/{phone}.session')
-            except errors.PhoneNumberUnoccupiedError:
-                await bot.send_message(chat_id, '⚠️خطا در ارسال کد !')
-                await account.disconnect()
-                os.remove(f'sessions/{phone}.session')
-            except ConnectionError:
-                await bot.send_message(dev,f'پروکسی  {proxy} دچار مشکل شده است و نمیتوان با ان ارتباط بر قرار کرد.')
-                await bot.send_message(chat_id, '❌ارور در ارسال کد لطفا دوباره امتحان کنید.')
-                await account.disconnect()
-                os.remove(f'sessions/{phone}.session')
-            except Exception as error:
-                await bot.send_message(2002159549, f'⚠️ مشکلی در ربات Contact adder پیش آمد !\nجزئیات : \n`{error}`')
-                await bot.send_message(chat_id, '⚠️ خطایی ناشناخته در ارسال کد !')
-                await account.disconnect()
-                os.remove(f'sessions/{phone}.session')
-        else:
-            await event.reply(f"⚠️ شماره {text} درست ارسال نشده است ! با توجه به نمونه ارسال کنید :\n\n📞 +989120000000")
-    elif step.startswith("auth1:"):
-        if text.isdigit():
-            msg = await event.reply('🙏لطفا کمی صبر کنید ...')
-            try:
-                nothing, phone, phone_code_hash= step.split(':')
+                tempClient['client'].disconnect()
+            except:
+                pass
+            tempClient = {}
+            step = None
+            my_keyboard = [
+                [InlineKeyboardButton('افزودن اکانت ➕', callback_data='addAccount'), InlineKeyboardButton('✖️ حذف اکانت', callback_data='removeAccount')],
+                [InlineKeyboardButton('عملیات عضویت ⚪️', callback_data='joinEval'), InlineKeyboardButton('⚪️ عملیات لفت', callback_data='leftEval')],
+                [InlineKeyboardButton('عملیات ویو پست ⚫️', callback_data='viewEval'), InlineKeyboardButton('⚫️ عملیات ری اکشن پست', callback_data='reActionEval')],
+                [InlineKeyboardButton('عملیات نظرسنجی 🔴', callback_data='voteEval'), InlineKeyboardButton('🔴 عملیات ریپورت پست', callback_data='reportPostPublic')],
+                [InlineKeyboardButton('🟡 عملیات بلاک کاربر 🟡', callback_data='blockEval')],
+                [InlineKeyboardButton('لیست اکانت ها 📊', callback_data='accountsList'), InlineKeyboardButton('♻️ بررسی اکانت ها', callback_data='checkAccounts')],
+                [InlineKeyboardButton('تنظیم زمان 🕠', callback_data='setTime'), InlineKeyboardButton('📛 لغو تمام عملیات ها', callback_data='endAllEvals')],
+            ]
+            await bot.edit_message_text(chat_id, message_id, '<b>> به منوی اصلی خوش آمدید :</b>', reply_markup=InlineKeyboardMarkup(my_keyboard))
 
+        elif data == 'endAllEvals'£~~~
+            step = None
+            evalsCount = len(isWorking)
+            isWorking = list()
+            await bot.invoke(functions.messages.SetBotCallbackAnswer(query_id=int(query_id), cache_time=1, alert=True, message=f'تمام {evalsCount} عملیات فعال با موفقیت متوقف شدند ✅'))
 
-                result = cursor.execute(f"SELECT * FROM `sessions` WHERE `number` = '{phone}' LIMIT 1")
-                number, proxy, password, verifaid = result.fetchone()
+        elif data == 'addAccount':
+            step = 'getPhoneForLogin'
+            my_keyboard = [
+                [InlineKeyboardButton('🔙', callback_data='backToMenu')],
+            ]
+            await bot.edit_message_text(chat_id, message_id, '<b>- برای افزودن اکانت لطفا شماره مورد نظرتان را ارسال نمایید :</b>', reply_markup=InlineKeyboardMarkup(my_keyboard))
+        
+        elif data == 'removeAccount':
+            step = 'removeAccount'
+            my_keyboard = [
+                [InlineKeyboardButton('🔙', callback_data='backToMenu')],
+            ]
+            await bot.edit_message_text(chat_id, message_id, '<b>- برای حذف اکانت لطفا شماره مورد نظرتان را ارسال نمایید :</b>', reply_markup=InlineKeyboardMarkup(my_keyboard))
 
-                IP, port, username, password = proxy.split(":")
-                print(IP, port, username, password)
-
-
-                account = TelegramClient("sessions/"+phone, api_id , api_hash , proxy=("socks5" , IP , int(port), True,  username, password))
-                await account.connect()
-
-                result = await account(functions.auth.SignInRequest(phone_number=phone, phone_code_hash=phone_code_hash,phone_code=text))
-                isSignedUp = await is_signed_up(result)
-                if isSignedUp == True:
-                    query(f"UPDATE `proxies` SET `used_count` = used_count + 1 WHERE `proxy` = '{proxy}'")
-                    query(f"UPDATE `sessions` SET `verifaid` = '1' WHERE `number` = '{phone}' LIMIT 1")
-                    set_step(chat_id, "none")
-                    await bot.send_message(chat_id, f'🔐 اکانت `{phone}` دریافت شد!\n\n👈 در صورت تمایل شماره ی بعدی را ارسال یا بر روی دکمه ی کنسل کلیک کنید .', buttons=[
-                        [Button.inline(f'دریافت موجودی', f'tayid|{time.time()}|False|{phone}')],
-                    ])
-                else:
-                    await bot.send_message(chat_id, '⚠️ خطا اکانت وارد شده در تلگرام ثبت نشده است.\n🙏 لطفا ابتدا خودتان با تلگرام وارد اکانت شده و سپس اکانت را برای ربات ارسال کنید\n\n👈 در صورت تمایل شماره ی بعدی را ارسال یا بر روی دکمه ی کنسل کلیک کنید .', buttons=cancel_markup)
-                    delete_acc(phone)
-                account.disconnect()
-            except errors.SessionPasswordNeededError:
-                await bot.send_message(chat_id, f'🔑 تایید دو مرحله ای شماره {phone} را وارد کنید.', buttons=cancel_markup)
-                set_step(chat_id, f'auth2:{phone}')
-                account.disconnect()
-            except errors.PhoneCodeExpiredError:
-                await bot.send_message(chat_id, '⚠️ خطا - کد ارسال شده منقضی شده است لطفا دوباره مراحل را طی کنید !', buttons=main_markup)
-                delete_acc(phone)
-                set_step(chat_id, "none")
-                account.disconnect()
-            except errors.PhoneCodeInvalidError:
-                await bot.send_message(chat_id, '❌ کد وارد شده اشتباه میباشد لطفا دوباره کد را ارسال کنید :', buttons=cancel_markup)
-                account.disconnect()
-            except ConnectionError:
-                await bot.send_message(2002159549, f'❌ مشکلی در پروکسی {proxy} ایجاد شده است ... !\nپروکسی از ربات حذف شد !\nدر صورتی تمایل می توانید دوباره پروکسی را به ربات اضافه کنید !')
-                await bot.send_message(2002159549, proxy)
-
-                await bot.send_message(chat_id, '❌ مشکلی در ارتباط با سرور به وجود آمد !\n🙏 لطفا مراحل را از اول دوباره طی کنید .', buttons=main_markup)
-                delete_acc(phone)
-
-                set_step(chat_id, "none")
-                account.disconnect()
-            except Exception as error:
-                await bot.send_message(2002159549, f'⚠️ مشکلی در ربات Contact adder پیش آمد !\nجزئیات : \n`{error}`')
-                await bot.send_message(chat_id, '⚠️ خطای ناشناخته لطفا دوباره مراحل را طی کنید !', buttons=main_markup)
-                delete_acc(phone)
-                set_step(chat_id, 'none')
-                account.disconnect()
-        else:
-            await event.reply('⚠️ کد ارسالی اشتباه است.\n👈 شما می توانید کد صحیح را ارسال یا کنسل کنید .', buttons=cancel_markup)
-    elif step.startswith('auth2'):
-        await event.reply('🙏 لطفا کمی صبر کنید ...')
-        try:
-            nothing, phone = step.split(':')
-
-
-            result = cursor.execute(f"SELECT * FROM `sessions` WHERE `number` = '{phone}' LIMIT 1")
-            number, proxy, password, verifaid = result.fetchone()
-
-            IP, port, username, password = proxy.split(":")
-            print(IP, port, username, password)
-
-
-            account = TelegramClient("sessions/" + phone, api_id , api_hash , proxy=("socks5" , IP , int(port), True,  username, password))
-
-            await account.connect()
-            await account.sign_in(password=text)
-            query(f"UPDATE `proxies` SET `used_count` = used_count + 1 WHERE `proxy` = '{proxy}'")
-            query(f"UPDATE `sessions` SET `verifaid` = '1' WHERE `number` = '{phone}' LIMIT 1")
-
-            await bot.send_message(chat_id, f'🔐 اکانت `{phone}` دریافت شد!\n\n👈 در صورت تمایل شماره ی بعدی را ارسال یا بر روی دکمه ی کنسل کلیک کنید .', buttons=[
-                [Button.inline(f'دریافت موجودی', f'tayid|{time.time()}|{text}|{phone}')],
-            ])
-        except errors.PasswordHashInvalidError:
-            await bot.send_message(chat_id, '⚠️ تایید دو مرحله ای  اشتباه است.\n👈 دوباره ارسال کنید یا کنسل کنید :', buttons=cancel_markup)
-        except ConnectionError:
-            await bot.send_message(2002159549, f'❌ مشکلی در پروکسی {proxy} ایجاد شده است ... !\nپروکسی از ربات حذف شد !\nدر صورتی تمایل می توانید دوباره پروکسی را به ربات اضافه کنید !')
-            await bot.send_message(2002159549, proxy)
-
-            await bot.send_message(chat_id, '❌ مشکلی در ارتباط با سرور به وجود آمد !\n🙏 لطفا مراحل را از اول دوباره طی کنید .', buttons=cancel_markup)
-            delete_acc(phone)
-            set_step(chat_id,'none')
-        except Exception as e:
-            await bot.send_message(2002159549, f'⚠️ مشکلی در ربات Contact adder پیش آمد !\nجزئیات : \n`{error}`')
-
-            await bot.send_message(chat_id, '⚠️ خطای ناشناخته لطفا دوباره مراحل را طی کنید !', buttons=main_markup)
-            delete_acc(phone)
-            set_step(chat_id, "none")
-        finally:
-            await account.disconnect()
-    # ======================================================
-    elif text == "☎️ پشتیبانی" :
-        await event.reply("👮🏻 همکاران ما در خدمت شما هستن\n\n* سعی بخش پشتیبانی بر این است که تمامی پیام های دریافتی در کمتر از ۱۲ ساعت پاسخ داده شوند، بنابراین تا زمان دریافت پاسخ صبور باشید\n\nلطفا پیام، سوال، پیشنهاد و یا انتقاد خود را در قالب یک پیام واحد به طور کامل ارسال کنید 👇🏻",  buttons=cancel_markup)
-        set_step(chat_id, "support")
-    elif step == "support":
-        await event.reply(f"✅ با موفقیت پیام به پشتیبانی ارسال شد !", buttons=main_markup)
-        await bot.send_message(owner, f'پیام از طرف `{chat_id}`:\n\n{text}\n\n\nجهت ارسال پاسخ ابتدا بر روی /send_{chat_id} ککلیک کنید !')
-        set_step(chat_id, 'none')
-    elif text.startswith("/send") and chat_id == owner:
-        set_step(chat_id, text)
-        await event.reply("✅ متن پیام را ارسال کنید :", buttons=cancel_markup)
-    elif step.startswith("/send"):
-        set_step(chat_id, 'none')
-        ui = step.replace("/send_", "")
-        await event.reply(f"✅ پیام با موفقیت به {ui} ارسال شد !", buttons=main_markup)
-        await bot.send_message(int(ui), f'یک پاسخ از طرف مدیریت دارید ! :\n\n{text}')
-    elif text == "👤 حساب کاربری":
-        balance = query(f"SELECT `balance` FROM `users` WHERE `user_id` = '{chat_id}'").fetchone()[0]
-        await event.reply(f"🆔 شناسه : {chat_id}\n📤 موجودی حساب : {balance} اکانت")
-    elif text == "🌐 افزودن پروکسی 🌐":
-        await event.reply(f"👈 لطفا فایل پروکسی ها را با فرمت زیر ارسال کنید :\n\nIP:PORT:USERNAME:PASSWORD\n1.1.1.1:443:username:pass", buttons=admin_ancel_markup)
-        set_step(chat_id, "add_proxy")
-    elif step == "add_proxy":
-        file_name = message.file.name
-        await bot.download_media(message)
-
-        with open(file_name, "r") as f:
-            proxies = f.read().split("\n")
-            for proxy in proxies:
+        elif data == 'accountsList':
+            if os.path.isfile(f'./accounts.txt'):
+                os.unlink(f'./accounts.txt')
+            myLen = len((await accountList()))
+            if myLen == 0 :
+                await bot.invoke(functions.messages.SetBotCallbackAnswer(query_id=int(query_id), cache_time=1, alert=True, message='اکانتی یافت نشد !'))
+            else:
+                with open(f'./accounts.txt', 'w') as my_file:
+                    my_file.write("\n".join(await accountList()))
                 try:
-                    if len(proxy.split(":")) == 4:
-                        query(f"INSERT INTO `proxies` (`proxy`, `used_count`) VALUES ('{proxy}', '0')")
+                    await bot.send_document(chat_id, f'./accounts.txt', caption=f'تعداد کل اکانت ها : {myLen}')
+                    os.unlink(f'./accounts.txt')
                 except:
                     pass
-        os.remove(file_name)
 
-        await event.reply(f"✅ با موفقیت اضافه شد ...!\n\n👈 در صورت تمایل پروکسی های بعدی را ارسال یا برو روی دکمه ی کنسل کلیک کنید ... !")
-# ==========================================================
-@bot.on(events.CallbackQuery)
-async def callback(events):
-    callback = events.data.decode()
-    if callback.startswith('tayid'):
-        if time.time() - int(callback.split('|')[1].split('.')[0]) >= int(600):
-            await events.answer('کمی صبر کنید ...')
-            phone = callback.split("|")[-1]
-            
-            
-            
-            result = cursor.execute(f"SELECT * FROM `sessions` WHERE `number` = '{phone}' LIMIT 1")
-            number, proxy, password, verifaid = result.fetchone()
-
-            IP, port, username, password = proxy.split(":")
-            client = TelegramClient("Accounts/"+callback.split('|')[-1], api_id , api_hash , proxy=("socks5" , IP , int(port), True,  username, password))
-            await client.connect()
-            
-            s = callback.split("|")
-            try:
-                result = await client(functions.account.GetAuthorizationsRequest())
-                if len(result.authorizations) == 1:
-                    if s[-2] != 'False':
-                        await client.edit_2fa(current_password=s[-2],new_password="@number1729")
-                        if phone.startswith("+62"):
-                            coin = 12000
-                        elif phone.startswith("+1") and len(phone) == 12:
-                            coin = 10000
-                        else:
-                            coin = 5000
-                        query(f"UPDATE `users` SET `balance` = balance + {coin} WHERE `user_id` = '{chat_id}'")
-                        await events.edit(f'🎉 تبریک، شماره {phone} تایید شد و {coin} سکه به حسابتان اضافه شد!')                        
+        elif data == 'checkAccounts':
+            if len(await accountList()) == 0 :
+                await bot.invoke(functions.messages.SetBotCallbackAnswer(query_id=int(query_id), cache_time=1, alert=True, message='اکانتی یافت نشد ❗️'))
+            else:
+                evalID = await randomString()
+                isWorking.append(evalID)
+                deleted = 0
+                error = 0
+                free = 0
+                cli = None
+                TS = time.time()
+                AllCount = len(await accountList())
+                await bot.edit_message_text(chat_id, message_id, '<b>عملیات بررسی اکانت ها شروع شد ...</b>')
+                for session in ((await accountList())):
+                    if evalID not in isWorking:
+                        break
+                    try:
+                        await cli.disconnect()
+                    except:
+                        pass
+                    await asyncio.sleep(sleeping)
+                    try:
+                        api_id2, api_hash2 = await randomAPP()
+                        cli = Client(f'sessions/{session}', api_id2, api_hash2)
+                        await cli.connect()
+                        await cli.resolve_peer("@durov")
+                        await cli.disconnect()
+                    except (errors.SessionRevoked, errors.UserDeactivated, errors.AuthKeyUnregistered, errors.UserDeactivatedBan, errors.Unauthorized):
+                        try:
+                            await cli.disconnect()
+                        except:
+                            pass
+                        os.unlink(f'sessions/{session}.session')
+                        deleted += 1
+                    except Exception as e:
+                        try:
+                            await cli.disconnect()
+                        except:
+                            pass
+                        error += 1
                     else:
-                        await client.edit_2fa(new_password="@wo4ka")
-                        if phone.startswith("+62"):
-                            coin = 12000
-                        elif phone.startswith("+1") and len(phone) == 12:
-                            coin = 10000
-                        else:
-                            coin = 5000
-                        query(f"UPDATE `users` SET `balance` = balance + {coin} WHERE `user_id` = '{chat_id}'")
-                        await events.edit(f'🎉 تبریک، شماره {phone} تایید شد و {coin} سکه به حسابتان اضافه شد!')                        
-                    shutil.move(f"Accounts/{phone}.session", f"Success/{phone}.session".format(phone))# move it
-                    os.system(f"screen -dm bash -c 'python3 Plugins/delete.py {phone}'")
-                else:
-                    await events.reply('⚠️ نشستهای فعال اکانت خالی نیست.')
-            except errors.UserDeactivatedBanError:
-                await events.edit('⚠️متاسفانه اکانت شما دیلیت شده است لطفا اکانت دیگری را وارد نمایید.')
+                        free += 1
+                    finally:
+                        spendTime = await remainTime(TS)
+                        allChecked = deleted + free + error
+                        await bot.edit_message_text(chat_id, message_id, f'''♻️ عملیات بررسی اکانت های ربات ...
 
-                os.remove("Accounts/{}.session".format(phone))   
-            except errors.UserDeactivatedError:
-                await events.edit('⚠️متاسفانه اکانت شما دیلیت شده است لطفا اکانت دیگری را وارد نمایید.')
-         
-                os.remove("Accounts/{}.session".format(phone))  
-            except errors.SessionExpiredError:
-                await events.edit(f'⚠️ شماره {phone} از دسترس ربات خارج شده است و امکان ثبت آن نیست.')
-       
-                os.remove("Accounts/{}.session".format(phone))    
-            except errors.SessionRevokedError:
-                await events.edit(f'⚠️ شماره {phone} از دسترس ربات خارج شده است و امکان ثبت آن نیست.')
-              
-                os.remove("Accounts/{}.session".format(phone))   
-            except errors.rpcerrorlist.PasswordHashInvalidError:
-                await events.edit(f'⚠️ تایید دو مرحله ای شماره {phone} تغییر کرده است و امکان ثبت آن نیست.')     
-            
-                os.remove("Accounts/{}.session".format(phone))   
-            except Exception as e:
-                await bot.send_message(349802221,f'Error ->\n{e}')
-                await events.edit('⚠️خطای ناشناخته از تلگرام لطفا دوباره اکانت را وارد نمایید یا اکانت دیگری را وارد ربات نمایید.')
-               
-                os.remove("Accounts/{}.session".format(phone))   
-            finally:
-                await client.disconnect()
-        else:
-            await events.answer('هنوز 10 دقیقه نشده است لطفا {} ثانیه دیگر صبر کنید با تشکر'.format(str( 600 - (time.time() - int(callback.split('|')[[1]].split('.')[0]))  ).split('.')[0]))
+• کل اکانت ها : {AllCount}
+• اکانت های بررسی شده : {allChecked}
+• اکانت های سالم : {free}
+• سشن های خراب : {deleted}
+• خطاهای ناشناخته : {error}
+• زمان سپری شده : {spendTime}
+
+برای لغو این عملیات از دستور ( /stop_{evalID} ) استفاده نمایید.''')
+                try:
+                    isWorking.remove(evalID)
+                except:
+                    pass
+                allChecked = deleted + free + error
+                spendTime = await remainTime(TS)
+                my_keyboard = [
+                    [InlineKeyboardButton('🔙', callback_data='backToMenu')],
+                ]
+                await bot.send_message(chat_id, f'''عملیات بررسی اکانت ها با موفقیت به اتمام رسید ✅
+
+• کل اکانت ها : {AllCount}
+• اکانت های بررسی شده : {allChecked}
+• اکانت های سالم : {free}
+• سشن های خراب : {deleted}
+• خطاهای ناشناخته : {error}
+• زمان سپری شده : {spendTime}''', reply_markup=InlineKeyboardMarkup(my_keyboard))
+
+
+        elif data == 'setTime':
+            step = 'setTime'
+            my_keyboard = [
+                [InlineKeyboardButton('🔙', callback_data='backToMenu')],
+            ]
+            await bot.edit_message_text(chat_id, message_id, f'<b>فاصله زمانی فعلی {sleeping} ثانیه میباشد\nدرصورتیکه قصد تغییر فاصله زمانی بین انجام عملیات ها را دارید عدد جدید را ارسال نمایید :</b>', reply_markup=InlineKeyboardMarkup(my_keyboard))
+
+        elif data == 'joinEval':
+            if len(await accountList()) == 0 :
+                await bot.invoke(functions.messages.SetBotCallbackAnswer(query_id=int(query_id), cache_time=1, alert=True, message='اکانتی یافت نشد ❗️'))
+            else:
+                step = 'joinAccounts'
+                my_keyboard = [
+                    [InlineKeyboardButton('🔙', callback_data='backToMenu')],
+                ]
+                await bot.edit_message_text(chat_id, message_id, '<b>- برای عملیات عضویت لطفا یوزرنیم یا لینک خصوصی مورد نظرتان را ارسال کنید :</b>', reply_markup=InlineKeyboardMarkup(my_keyboard))
+
+        elif data == 'leftEval':
+            if len(await accountList()) == 0 :
+                await bot.invoke(functions.messages.SetBotCallbackAnswer(query_id=int(query_id), cache_time=1, alert=True, message='اکانتی یافت نشد ❗️'))
+            else:
+                step = 'leaveAccounts'
+                my_keyboard = [
+                    [InlineKeyboardButton('🔙', callback_data='backToMenu')],
+                ]
+                await bot.edit_message_text(chat_id, message_id, '<b>- برای عملیات لفت لطفا شناسه عددی مورد نظرتان را ارسال کنید :</b>', reply_markup=InlineKeyboardMarkup(my_keyboard))
+
+        elif data == 'viewEval':
+            if len(await accountList()) == 0 :
+                await bot.invoke(functions.messages.SetBotCallbackAnswer(query_id=int(query_id), cache_time=1, alert=True, message='اکانتی یافت نشد ❗️'))
+            else:
+                step = 'sendViewToPost'
+                my_keyboard = [
+                    [InlineKeyboardButton('🔙', callback_data='backToMenu')],
+                ]
+                await bot.edit_message_text(chat_id, message_id, '<b>- لطفا لینک پست مورد نظر را ارسال نمایید :</b>', reply_markup=InlineKeyboardMarkup(my_keyboard))
+
+        elif data == 'reportPostPublic':
+            step = 'reportPostPublic'
+            my_keyboard = [
+                    [InlineKeyboardButton('🔙', callback_data='backToMenu')],
+                ]
+            await bot.edit_message_text(chat_id, message_id, '<b>لطفا لینک پست کانال|گروه مورد نظر را ارسال نمایید :</b>', reply_markup=InlineKeyboardMarkup(my_keyboard))
+
+        elif data == 'reActionEval':
+            step = 'reActionEval'
+            my_keyboard = [
+                    [InlineKeyboardButton('🔙', callback_data='backToMenu')],
+                ]
+            await bot.edit_message_text(chat_id, message_id, '<b>لطفا در خط اول لینک پست موردنظر و در خط دوم ایموجی ها با فاصله و در خط سوم تعداد موردنظرتان را وارد نمایید :</b>', reply_markup=InlineKeyboardMarkup(my_keyboard))
         
-# ==========================================================
-bot.run_until_disconnected()
+        elif data == 'voteEval':
+            step = 'voteEval'
+            my_keyboard = [
+                    [InlineKeyboardButton('🔙', callback_data='backToMenu')],
+                ]
+            await bot.edit_message_text(chat_id, message_id, '<b>لطفا در خط اول لینک پست و در خط دوم شماره گزینه موردنظرتان را وارد کنید (گزینه ها از 0 شروع میشوند) :</b>', reply_markup=InlineKeyboardMarkup(my_keyboard))
+
+        elif data == 'blockEval':
+            step = 'blockEval'
+            my_keyboard = [
+                    [InlineKeyboardButton('🔙', callback_data='backToMenu')],
+                ]
+            await bot.edit_message_text(chat_id, message_id, '<b>یوزرنیم کاربر مورد نظرتان را با @ وارد کنید :</b>', reply_markup=InlineKeyboardMarkup(my_keyboard))
+
+
+#           Text Response            #
+@bot.on_message(filters.text & filters.private & filters.user(bot_admins))
+async def TextResponse(client, message):
+    global step, isWorking, tempClient, api_hash, api_id, sleeping
+    chat_id = message.chat.id
+    text = message.text
+    my_keyboard = [
+        [InlineKeyboardButton('🔙', callback_data='backToMenu')],
+    ]
+
+#                       Add Account                       #
+    if step == 'getPhoneForLogin' and text.replace('+', '').replace(' ', '').replace('-', '').isdigit():
+        phone_number = text.replace('+', '').replace(' ', '').replace('-', '')
+        if os.path.isfile(f'sessions/{phone_number}.session'):
+            await message.reply('<b>این شماره از قبل در پوشه sessions سرور موجود است !</b>', reply_markup=InlineKeyboardMarkup(my_keyboard), quote=True)
+        else:
+            tempClient['number'] = phone_number
+            tempClient['client'] = Client(f'sessions/{phone_number}', int(api_id), api_hash)
+            await tempClient['client'].connect()
+            try :
+                tempClient['response'] = await tempClient['client'].send_code(phone_number)
+            except (errors.BadRequest, errors.PhoneNumberBanned, errors.PhoneNumberFlood, errors.PhoneNumberInvalid):
+                await message.reply('<b>خطایی رخ داد !</b>', reply_markup=InlineKeyboardMarkup(my_keyboard), quote=True)
+            else:
+                step = 'get5DigitsCode'
+                await message.reply(f'<b>کد 5 رقمی به شماره {phone_number} ارسال شد ✅</b>', reply_markup=InlineKeyboardMarkup(my_keyboard), quote=True)
+
+    elif step == 'get5DigitsCode' and text.replace(' ', '').isdigit():
+        telegram_code = text.replace(' ', '')
+        try:
+            await tempClient['client'].sign_in(tempClient['number'], tempClient['response'].phone_code_hash, telegram_code)
+            await tempClient['client'].disconnect()
+            tempClient = {}
+            step = 'getPhoneForLogin'
+            await message.reply('<b>اکانت با موفقیت ثبت شد ✅\nدرصورتیکه قصد افزودن شماره دارید, شماره موردنظر را ارسال کنید و یا از دستور /cancel استفاده نمایید.</b>', reply_markup=InlineKeyboardMarkup(my_keyboard), quote=True)
+        except errors.PhoneCodeExpired :
+            await tempClient['client'].disconnect()
+            tempClient = {}
+            step = None
+            await message.reply('<b>کد ارسال شده منقضی شده است, لطفا عملیات را /cancel کنید و مجدد تلاش کنید.</b>', reply_markup=InlineKeyboardMarkup(my_keyboard), quote=True)
+        except errors.PhoneCodeInvalid :
+            await message.reply('<b>کد وارد شده اشتباه است یا منقضی شده, لطفا از دستور /cancel استفاده نمایید و یا کد درست را ارسال کنید.</b>', reply_markup=InlineKeyboardMarkup(my_keyboard), quote=True)
+        except errors.BadRequest :
+            await message.reply('<b>کد وارد شده اشتباه است یا منقضی شده, لطفا از دستور /cancel استفاده نمایید و یا کد درست را ارسال کنید.</b>', reply_markup=InlineKeyboardMarkup(my_keyboard), quote=True)
+        except errors.AuthKeyUnregistered :
+            await asyncio.sleep(3)
+            name = await randomString()
+            try:
+                await tempClient['client'].sign_up(tempClient['number'], tempClient['response'].phone_code_hash, name)
+            except Exception:
+                pass
+            await tempClient['client'].disconnect()
+            tempClient = {}
+            step = 'getPhoneForLogin'
+            await message.reply('<b>اکانت با موفقیت ثبت شد ✅\nدرصورتیکه قصد افزودن شماره دارید, شماره موردنظر را ارسال کنید و یا از دستور /cancel استفاده نمایید.</b>', reply_markup=InlineKeyboardMarkup(my_keyboard), quote=True)
+        except errors.SessionPasswordNeeded:
+            step = 'SessionPasswordNeeded'
+            await message.reply('<b>لطفا رمز تایید دو مرحله ای را وارد نمایید :</b>', reply_markup=InlineKeyboardMarkup(my_keyboard), quote=True)
+
+    elif step == 'SessionPasswordNeeded':
+        twoFaPass = text
+        try :
+            await tempClient['client'].check_password(twoFaPass)
+        except errors.BadRequest:
+            await message.reply('<b>رمز وارد شده اشتباه میباشد, لطفا مجدد ارسال نمایید یا از دستور /cancel استفاده نمایید.</b>', reply_markup=InlineKeyboardMarkup(my_keyboard), quote=True)
+        else:
+            await tempClient['client'].disconnect()
+            tempClient = {}
+            step = 'getPhoneForLogin'
+            await message.reply('<b>اکانت با موفقیت ثبت شد ✅\nدرصورتیکه قصد افزودن شماره دارید, شماره موردنظر را ارسال کنید و یا از دستور /cancel استفاده نمایید.</b>', reply_markup=InlineKeyboardMarkup(my_keyboard), quote=True)
+
+#                       Delete Account                       #
+    if step == 'removeAccount':
+        step = None
+        phone_number = text.replace('+', '').replace(' ', '').replace('-', '')
+        if not os.path.isfile(f'sessions/{phone_number}.session'):
+            await message.reply('<b>شماره مورد نظر در سرور یافت نشد !</b>', reply_markup=InlineKeyboardMarkup(my_keyboard), quote=True)
+        else:
+            await bot.send_document(message.chat.id, f'sessions/{phone_number}.session', caption='<b>شماره مورد نظر با موفقیت حذف شد ✅\nسشن پایروگرام برای بایگانی برای شما ارسال شد.</b>', reply_markup=InlineKeyboardMarkup(my_keyboard))
+            os.unlink(f'sessions/{phone_number}.session')
+
+#                       set Time                       #
+    if step == 'setTime':
+        step = None
+        sleeping = float(text)
+        await message.reply('<b>زمان جدید با موفقیت تنظیم شد ✅</b>', reply_markup=InlineKeyboardMarkup(my_keyboard), quote=True)
+
+#                       join Accounts                       #
+    if step == 'joinAccounts':
+        step = None
+        evalID = await randomString()
+        isWorking.append(evalID)
+        link = text.split()[0].replace('@', '').replace('+', 'joinchat/')
+        allAcccounts = len((await accountList()))
+        all = 0
+        error = 0
+        done = 0
+        TS = time.time()
+        msg = await message.reply('<b>عملیات عضویت شروع شد ...</b>')
+        for session in ((await accountList())):
+            if evalID not in isWorking:
+                break
+            all += 1
+            await asyncio.sleep(sleeping)
+            try:
+                api_id2, api_hash2 = await randomAPP()
+                cli = Client(f'sessions/{session}', api_id2, api_hash2)
+                await cli.connect()
+                await asyncio.sleep(0.2)
+                await cli.join_chat(link)
+                await asyncio.sleep(0.2)
+                await cli.disconnect()
+            except Exception as e:
+                try:
+                    await cli.disconnect()
+                except:
+                    pass
+                error += 1
+            else:
+                done += 1
+            finally:
+                spendTime = await remainTime(TS)
+                await bot.edit_message_text(chat_id, msg.id, f'''♻️ عملیات عضویت اکانت های ربات ...
+
+• اکانت های بررسی شده : {all}/{allAcccounts}
+• موفق : {done}
+• خطا : {error}
+• زمان سپری شده : {spendTime}
+
+برای لغو این عملیات از دستور ( /stop_{evalID} ) استفاده نمایید.''')
+        try:
+            isWorking.remove(evalID)
+        except:
+            pass
+        spendTime = await remainTime(TS)
+        await message.reply(f'''<b>عملیات عضویت با موفقیت به پایان رسید ✅
+
+• اکانت های بررسی شده : {all}/{allAcccounts}
+• موفق : {done}
+• خطا : {error}
+• زمان سپری شده : {spendTime}</b>''', reply_markup=InlineKeyboardMarkup(my_keyboard), quote=True)
+
+
+#                       Leave Accounts                       #
+    if step == 'leaveAccounts':
+        step = None
+        evalID = await randomString()
+        isWorking.append(evalID)
+        allAcccounts = len((await accountList()))
+        all = 0
+        error = 0
+        done = 0
+        TS = time.time()
+        msg = await message.reply('<b>عملیات خروج شروع شد ...</b>', reply_markup=InlineKeyboardMarkup(my_keyboard), quote=True)
+        for session in ((await accountList())):
+            if evalID not in isWorking:
+                break
+            all += 1
+            await asyncio.sleep(sleeping)
+            try:
+                api_id2, api_hash2 = await randomAPP()
+                cli = Client(f'sessions/{session}', api_id2, api_hash2)
+                await cli.connect()
+                await asyncio.sleep(0.2)
+                await cli.leave_chat(int(text), delete=True)
+                await asyncio.sleep(0.2)
+                await cli.disconnect()
+            except Exception as e:
+                try:
+                    await cli.disconnect()
+                except:
+                    pass
+                error += 1
+            else:
+                done += 1
+            finally:
+                spendTime = await remainTime(TS)
+                await bot.edit_message_text(chat_id, msg.id, f'''♻️ عملیات لفت اکانت های ربات ...
+
+• اکانت های بررسی شده : {all}/{allAcccounts}
+• موفق : {done}
+• خطا : {error}
+• زمان سپری شده : {spendTime}
+
+برای لغو این عملیات از دستور ( /stop_{evalID} ) استفاده نمایید.''')
+        try:
+            isWorking.remove(evalID)
+        except:
+            pass
+        spendTime = await remainTime(TS)
+        await message.reply(f'''<b>عملیات لفت با موفقیت به پایان رسید ✅</b>
+
+• اکانت های بررسی شده : {all}/{allAcccounts}
+• موفق : {done}
+• خطا : {error}
+• زمان سپری شده : {spendTime}''', reply_markup=InlineKeyboardMarkup(my_keyboard), quote=True)
+
+#                       send view                       #
+    if step == 'sendViewToPost':
+        step = None
+        evalID = await randomString()
+        isWorking.append(evalID)
+        username = text.split('/')[3]
+        msg_id = int(text.split('/')[4])
+        allAcccounts = len((await accountList()))
+        all = 0
+        error = 0
+        done = 0
+        TS = time.time()
+        msg = await message.reply('<b>عملیات ویو پست کانال شروع شد ...</b>', reply_markup=InlineKeyboardMarkup(my_keyboard), quote=True)
+        for session in ((await accountList())):
+            if evalID not in isWorking :
+                break
+            try:
+                await cli.disconnect()
+            except:
+                pass
+            all += 1
+            await asyncio.sleep(sleeping)
+            try:
+                api_id2, api_hash2 = await randomAPP()
+                cli = Client(f'sessions/{session}', api_id2, api_hash2)
+                await cli.connect()
+                await asyncio.sleep(0.2)
+                await cli.invoke(functions.messages.GetMessagesViews(peer = await cli.resolve_peer(username), id=[msg_id], increment=True))
+                await asyncio.sleep(0.2)
+                await cli.disconnect()
+            except Exception as e:
+                try:
+                    await cli.disconnect()
+                except:
+                    pass
+                error += 1
+            else:
+                done += 1
+            finally:
+                spendTime = await remainTime(TS)
+                await bot.edit_message_text(chat_id, msg.id, f'''♻️ عملیات ارسال ویو اکانت های ربات ...
+
+• اکانت های بررسی شده : {all}/{allAcccounts}
+• موفق : {done}
+• خطا : {error}
+• زمان سپری شده : {spendTime}
+
+برای لغو این عملیات از دستور ( /stop_{evalID} ) استفاده نمایید.''')
+        try:
+            isWorking.remove(evalID)
+        except:
+            pass
+        spendTime = await remainTime(TS)
+        await message.reply(f'''<b>عملیات بازدید پست کانال با موفقیت به پایان رسید ✅</b>
+
+• اکانت های بررسی شده : {all}/{allAcccounts}
+• موفق : {done}
+• خطا : {error}
+• زمان سپری شده : {spendTime}''', reply_markup=InlineKeyboardMarkup(my_keyboard), quote=True)
+
+
+#                       send Public Post Roport                       #
+    if step == 'reportPostPublic':
+        step = None
+        evalID = await randomString()
+        isWorking.append(evalID)
+        if text.split('/')[3] != 'c':
+            peerID = '@' + text.split('/')[3]
+            peerMessageID = int(text.split('/')[4])
+        else:
+            peerID = int('-100' + text.split('/')[4])
+            peerMessageID = int(text.split('/')[5])
+        allAcccounts = len((await accountList()))
+        all = 0
+        error = 0
+        done = 0
+        TS = time.time()
+        if text.split('/')[3].isdigit():
+            await message.reply('<b>لینکی که برام ارسال کردی مربوط به یک چت خصوصیه ❗️</b>', reply_markup=InlineKeyboardMarkup(my_keyboard), quote=True)
+        else:
+            msg = await message.reply('<b>عملیات ریپورت پست عمومی شروع شد ...</b>', reply_markup=InlineKeyboardMarkup(my_keyboard), quote=True)
+            for session in ((await accountList())):
+                if evalID not in isWorking:
+                    break
+                try:
+                    await cli.disconnect()
+                except:
+                    pass
+                all += 1
+                await asyncio.sleep(sleeping)
+                try:
+                    api_id2, api_hash2 = await randomAPP()
+                    cli = Client(f'sessions/{session}', api_id2, api_hash2)
+                    await cli.connect()
+                    await asyncio.sleep(0.2)
+                    await cli.invoke(functions.messages.Report(peer= await cli.resolve_peer(peerID), id=[peerMessageID], reason=types.InputReportReasonPornography(), message=''))
+                    await asyncio.sleep(0.2)
+                    await cli.disconnect()
+                except Exception as e:
+                    try:
+                        await cli.disconnect()
+                    except:
+                        pass
+                    error += 1
+                else:
+                    done += 1
+                finally:
+                    spendTime = await remainTime(TS)
+                    await bot.edit_message_text(chat_id, msg.id, f'''♻️ عملیات ریپورت پست کانال ...
+
+• اکانت های بررسی شده : {all}/{allAcccounts}
+• موفق : {done}
+• خطا : {error}
+• زمان سپری شده : {spendTime}
+
+برای لغو این عملیات از دستور ( /stop_{evalID} ) استفاده نمایید.''')
+            try:
+                isWorking.remove(evalID)
+            except:
+                pass
+            spendTime = await remainTime(TS)
+            await message.reply(f'''<b>عملیات ریپورت پست با موفقیت به پایان رسید ✅</b>
+
+• اکانت های بررسی شده : {all}/{allAcccounts}
+• موفق : {done}
+• خطا : {error}
+• زمان سپری شده : {spendTime}''', reply_markup=InlineKeyboardMarkup(my_keyboard), quote=True)
+
+#                       send Post reAction                       #
+    if step == 'reActionEval':
+        step = None
+        evalID = await randomString()
+        isWorking.append(evalID)
+        peerID = '@' + text.split("\n")[0].split('/')[3]
+        peerMessageID = int(text.split("\n")[0].split('/')[4])
+        emojies = text.split("\n")[1].split()
+        countOfWork = int(text.split("\n")[2])
+        allAcccounts = len((await accountList()))
+        all = 0
+        error = 0
+        done = 0
+        TS = time.time()
+        if text.split("\n")[0].split('/')[3].isdigit():
+            await message.reply('<b>لینکی که برام ارسال کردی مربوط به یک چت خصوصیه ❗️</b>', reply_markup=InlineKeyboardMarkup(my_keyboard), quote=True)
+        else:
+            msg = await message.reply('<b>عملیات ارسال ری اکشن شروع شد ...</b>', reply_markup=InlineKeyboardMarkup(my_keyboard), quote=True)
+            for session in ((await accountList())):
+                if all >= countOfWork:
+                    break
+                if evalID not in isWorking:
+                    break
+                try:
+                    await cli.disconnect()
+                except:
+                    pass
+                all += 1
+                await asyncio.sleep(sleeping)
+                try:
+                    api_id2, api_hash2 = await randomAPP()
+                    cli = Client(f'sessions/{session}', api_id2, api_hash2)
+                    await cli.connect()
+                    await asyncio.sleep(0.2)
+                    await cli.send_reaction(peerID, peerMessageID, random.choice(emojies))
+                    await asyncio.sleep(0.2)
+                    await cli.disconnect()
+                except Exception as e:
+                    try:
+                        await cli.disconnect()
+                    except:
+                        pass
+                    error += 1
+                else:
+                    done += 1
+                finally:
+                    spendTime = await remainTime(TS)
+                    await bot.edit_message_text(chat_id, msg.id, f'''♻️ عملیات ارسال ری اکشن پست کانال ...
+
+• اکانت های بررسی شده : {all}/{allAcccounts}
+• موفق : {done}
+• خطا : {error}
+• زمان سپری شده : {spendTime}
+
+برای لغو این عملیات از دستور ( /stop_{evalID} ) استفاده نمایید.''')
+            try:
+                isWorking.remove(evalID)
+            except:
+                pass
+            spendTime = await remainTime(TS)
+            await message.reply(f'''<b>عملیات ری اکشن پست با موفقیت به پایان رسید ✅</b>
+
+• اکانت های بررسی شده : {all}/{allAcccounts}
+• موفق : {done}
+• خطا : {error}
+• زمان سپری شده : {spendTime}''', reply_markup=InlineKeyboardMarkup(my_keyboard), quote=True)
+
+#                       send Post vote                       #
+    if step == 'voteEval':
+        step = None
+        evalID = await randomString()
+        isWorking.append(evalID)
+        peerID = '@' + text.split("\n")[0].split('/')[3]
+        peerMessageID = int(text.split("\n")[0].split('/')[4])
+        opt = text.split("\n")[1]
+        allAcccounts = len((await accountList()))
+        all = 0
+        error = 0
+        done = 0
+        TS = time.time()
+        if not opt.isdigit():
+            await message.reply('<b>گزینه وارد شده صحیح نمیباشد ❗️</b>', reply_markup=InlineKeyboardMarkup(my_keyboard), quote=True)
+        else:
+            msg = await message.reply('<b>عملیات ارسال نظر سنجی شروع شد ...</b>', reply_markup=InlineKeyboardMarkup(my_keyboard), quote=True)
+            for session in ((await accountList())):
+                if evalID not in isWorking:
+                    break
+                try:
+                    await cli.disconnect()
+                except:
+                    pass
+                all += 1
+                await asyncio.sleep(sleeping)
+                try:
+                    api_id2, api_hash2 = await randomAPP()
+                    cli = Client(f'sessions/{session}', api_id2, api_hash2)
+                    await cli.connect()
+                    await asyncio.sleep(0.2)
+                    await cli.vote_poll(peerID, peerMessageID, int(opt))
+                    await asyncio.sleep(0.2)
+                    await cli.disconnect()
+                except Exception as e:
+                    try:
+                        await cli.disconnect()
+                    except:
+                        pass
+                    error += 1
+                else:
+                    done += 1
+                finally:
+                    spendTime = await remainTime(TS)
+                    await bot.edit_message_text(chat_id, msg.id, f'''♻️ عملیات ارسال نظرسنجی ...
+
+• اکانت های بررسی شده : {all}/{allAcccounts}
+• موفق : {done}
+• خطا : {error}
+• زمان سپری شده : {spendTime}
+
+برای لغو این عملیات از دستور ( /stop_{evalID} ) استفاده نمایید.''')
+            try:
+                isWorking.remove(evalID)
+            except:
+                pass
+            spendTime = await remainTime(TS)
+            await message.reply(f'''<b>عملیات نظر سنجی با موفقیت به پایان رسید ✅</b>
+
+• اکانت های بررسی شده : {all}/{allAcccounts}
+• موفق : {done}
+• خطا : {error}
+• زمان سپری شده : {spendTime}''', reply_markup=InlineKeyboardMarkup(my_keyboard), quote=True)
+
+
+#                       block users                       #
+    if step == 'blockEval':
+        step = None
+        evalID = await randomString()
+        isWorking.append(evalID)
+        peerID = text.replace('@', '')
+        allAcccounts = len((await accountList()))
+        all = 0
+        error = 0
+        done = 0
+        TS = time.time()
+        msg = await message.reply('<b>عملیات ارسال نظر سنجی شروع شد ...</b>', reply_markup=InlineKeyboardMarkup(my_keyboard), quote=True)
+        for session in ((await accountList())):
+            if evalID not in isWorking:
+                break
+            try:
+                await cli.disconnect()
+            except:
+                pass
+            all += 1
+            await asyncio.sleep(sleeping)
+            try:
+                api_id2, api_hash2 = await randomAPP()
+                cli = Client(f'sessions/{session}', api_id2, api_hash2)
+                await cli.connect()
+                await asyncio.sleep(0.2)
+                await cli.block_user(peerID)
+                await asyncio.sleep(0.2)
+                await cli.disconnect()
+            except Exception as e:
+                try:
+                    await cli.disconnect()
+                except:
+                    pass
+                error += 1
+            else:
+                done += 1
+            finally:
+                spendTime = await remainTime(TS)
+                await bot.edit_message_text(chat_id, msg.id, f'''♻️ عملیات بلاک کاربر ...
+
+• اکانت های بررسی شده : {all}/{allAcccounts}
+• موفق : {done}
+• خطا : {error}
+• زمان سپری شده : {spendTime}
+
+برای لغو این عملیات از دستور ( /stop_{evalID} ) استفاده نمایید.''')
+        try:
+            isWorking.remove(evalID)
+        except:
+            pass
+        spendTime = await remainTime(TS)
+        await message.reply(f'''<b>عملیات بلاک کاربر با موفقیت به پایان رسید ✅</b>
+
+• اکانت های بررسی شده : {all}/{allAcccounts}
+• موفق : {done}
+• خطا : {error}
+• زمان سپری شده : {spendTime}''', reply_markup=InlineKeyboardMarkup(my_keyboard), quote=True)
+
+
+
+
+
+
+
+
+
+
+
+bot.run()
