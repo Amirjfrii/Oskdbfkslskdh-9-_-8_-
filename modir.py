@@ -347,35 +347,35 @@ async def TextResponse(client, message):
 
     elif step == 'get5DigitsCode' and text.replace(' ', '').isdigit():
         telegram_code = text.replace(' ', '')
+    try:
+        await tempClient['client'].sign_in(tempClient['number'], tempClient['response'].phone_code_hash, telegram_code)
+        await tempClient['client'].disconnect()
+        tempClient = {}
+        step = 'getPhoneForLogin'
+        await message.reply('<b>اکانت با موفقیت ثبت شد ✅\nدرصورتیکه قصد افزودن شماره دارید, شماره موردنظر را ارسال کنید و یا از دستور /cancel استفاده نمایید.</b>', reply_markup=InlineKeyboardMarkup(my_keyboard), quote=True)
+    except errors.PhoneCodeExpired:
+        await tempClient['client'].disconnect()
+        tempClient = {}
+        step = None
+        await message.reply('<b>کد ارسال شده منقضی شده است, لطفا عملیات را /cancel کنید و مجدد تلاش کنید.</b>', reply_markup=InlineKeyboardMarkup(my_keyboard), quote=True)
+    except errors.PhoneCodeInvalid:
+        await message.reply('<b>کد وارد شده اشتباه است یا منقضی شده, لطفا از دستور /cancel استفاده نمایید و یا کد درست را ارسال کنید.</b>', reply_markup=InlineKeyboardMarkup(my_keyboard), quote=True)
+    except errors.BadRequest:
+        await message.reply('<b>کد وارد شده اشتباه است یا منقضی شده, لطفا از دستور /cancel استفاده نمایید و یا کد درست را ارسال کنید.</b>', reply_markup=InlineKeyboardMarkup(my_keyboard), quote=True)
+    except errors.AuthKeyUnregistered:
+        await asyncio.sleep(3)
+        name = await randomString()
         try:
-            await tempClient['client'].sign_in(tempClient['number'], tempClient['response'].phone_code_hash, telegram_code)
-            await tempClient['client'].disconnect()
-            tempClient = {}
-            step = 'getPhoneForLogin'
-            await message.reply('<b>اکانت با موفقیت ثبت شد ✅\nدرصورتیکه قصد افزودن شماره دارید, شماره موردنظر را ارسال کنید و یا از دستور /cancel استفاده نمایید.</b>', reply_markup=InlineKeyboardMarkup(my_keyboard), quote=True)
-        except errors.PhoneCodeExpired :
-            await tempClient['client'].disconnect()
-            tempClient = {}
-            step = None
-            await message.reply('<b>کد ارسال شده منقضی شده است, لطفا عملیات را /cancel کنید و مجدد تلاش کنید.</b>', reply_markup=InlineKeyboardMarkup(my_keyboard), quote=True)
-        except errors.PhoneCodeInvalid :
-            await message.reply('<b>کد وارد شده اشتباه است یا منقضی شده, لطفا از دستور /cancel استفاده نمایید و یا کد درست را ارسال کنید.</b>', reply_markup=InlineKeyboardMarkup(my_keyboard), quote=True)
-        except errors.BadRequest :
-            await message.reply('<b>کد وارد شده اشتباه است یا منقضی شده, لطفا از دستور /cancel استفاده نمایید و یا کد درست را ارسال کنید.</b>', reply_markup=InlineKeyboardMarkup(my_keyboard), quote=True)
-        except errors.AuthKeyUnregistered :
-            await asyncio.sleep(3)
-            name = await randomString()
-            try:
-                await tempClient['client'].sign_up(tempClient['number'], tempClient['response'].phone_code_hash, name)
-            except Exception:
-                pass
-            await tempClient['client'].disconnect()
-            tempClient = {}
-            step = 'getPhoneForLogin'
-            await message.reply('<b>اکانت با موفقیت ثبت شد ✅\nدرصورتیکه قصد افزودن شماره دارید, شماره موردنظر را ارسال کنید و یا از دستور /cancel استفاده نمایید.</b>', reply_markup=InlineKeyboardMarkup(my_keyboard), quote=True)
-        except errors.SessionPasswordNeeded:
-            step = 'SessionPasswordNeeded'
-            await message.reply('<b>لطفا رمز تایید دو مرحله ای را وارد نمایید :</b>', reply_markup=InlineKeyboardMarkup(my_keyboard), quote=True)
+            await tempClient['client'].sign_up(tempClient['number'], tempClient['response'].phone_code_hash, name)
+        except Exception:
+            pass
+        await tempClient['client'].disconnect()
+        tempClient = {}
+        step = 'getPhoneForLogin'
+        await message.reply('<b>اکانت با موفقیت ثبت شد ✅\nدرصورتیکه قصد افزودن شماره دارید, شماره موردنظر را ارسال کنید و یا از دستور /cancel استفاده نمایید.</b>', reply_markup=InlineKeyboardMarkup(my_keyboard), quote=True)
+    except errors.SessionPasswordNeeded:
+        step = 'SessionPasswordNeeded'
+        await message.reply('<b>لطفا رمز تایید دو مرحله ای را وارد نمایید :</b>', reply_markup=InlineKeyboardMarkup(my_keyboard), quote=True)
 
     elif step == 'SessionPasswordNeeded':
         twoFaPass = text
