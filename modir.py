@@ -143,7 +143,7 @@ async def callbackQueries(client, query):
             ]
             await bot.edit_message_text(chat_id, message_id, '<b>> به منوی اصلی خوش آمدید :</b>', reply_markup=InlineKeyboardMarkup(my_keyboard))
 
-        elif data == 'endAllEvals'£~~~
+        elif data == 'endAllEvals'
             step = None
             evalsCount = len(isWorking)
             isWorking = list()
