@@ -357,7 +357,7 @@ async def TextResponse(client, message):
             step = 'get5DigitsCode'
             await message.reply(f'<b>کد 5 رقمی به شماره {phone_number} ارسال شد ✅</b>', reply_markup=InlineKeyboardMarkup(my_keyboard), quote=True)
     if step == 'get5DigitsCode':
-    await message.reply(
+        await message.reply(
         "<b>لطفا کد 5 رقمی ارسال شده را با استفاده از دکمه‌های زیر وارد کنید:</b>",
         reply_markup=get_code_keyboard()
     )
