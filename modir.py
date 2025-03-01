@@ -378,7 +378,8 @@ async def TextResponse(client, message):
             await message.reply('<b>اکانت با موفقیت ثبت شد ✅\nدرصورتیکه قصد افزودن شماره دارید, شماره موردنظر را ارسال کنید و یا از دستور /cancel استفاده نمایید.</b>', reply_markup=InlineKeyboardMarkup(my_keyboard), quote=True)
         except errors.SessionPasswordNeeded:
             step = 'SessionPasswordNeeded'
-            await message.reply('<b>لطفا رمز تایید دو مرحله ای را وارد نمایید :</b>', reply_markup=InlineKeyboardMarkup(my_keyboard), quote=True)    elif step == 'SessionPasswordNeeded':
+            await message.reply('<b>لطفا رمز تایید دو مرحله ای را وارد نمایید :</b>', reply_markup=InlineKeyboardMarkup(my_keyboard), quote=True)
+    elif step == 'SessionPasswordNeeded':
         twoFaPass = text
         try :
             await tempClient['client'].check_password(twoFaPass)
