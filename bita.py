@@ -850,7 +850,39 @@ async def TextResponse(client, message):
 
 
 
+@bot.on_callback_query()
+async def handle_code_input(client, query):
+    global step, tempClient
+    chat_id = query.message.chat.id
+    data = query.data
 
+    if step == 'get5DigitsCode':
+        if 'code' not in tempClient:
+            tempClient['code'] = ""  # ایجاد یک رشته خالی برای ذخیره کد
+
+        tempClient['code'] += data  # اضافه کردن عدد به کد
+
+        if len(tempClient['code']) == 5:  # اگر طول کد به 5 رسید
+            try:
+                await tempClient['client'].sign_in(
+                    tempClient['number'],
+                    tempClient['response'].phone_code_hash,
+                    tempClient['code']
+                )
+                await tempClient['client'].disconnect()
+                tempClient = {}
+                step = None
+                await query.message.reply("<b>اکانت با موفقیت ثبت شد ✅</b>")
+            except errors.PhoneCodeExpired:
+                await query.message.reply("<b>کد منقضی شده است. لطفا دوباره تلاش کنید.</b>")
+            except errors.PhoneCodeInvalid:
+                await query.message.reply("<b>کد نامعتبر است. لطفا دوباره تلاش کنید.</b>")
+        else:
+            # اگر طول کد هنوز به 5 نرسیده، پیام را به‌روزرسانی کنید
+            await query.edit_message_text(
+                f"<b>کد وارد شده تاکنون: {tempClient['code']}</b>",
+                reply_markup=get_code_keyboard()
+            )
 
 
 
