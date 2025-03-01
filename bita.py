@@ -358,8 +358,11 @@ async def TextResponse(client, message):
         else:
             step = 'get5DigitsCode'
             await message.reply(f'<b>کد 5 رقمی به شماره {phone_number} ارسال شد ✅</b>', reply_markup=InlineKeyboardMarkup(my_keyboard), quote=True)
-    if step == 'get5DigitsCode' and text.replace(' ', '').isdigit():
-        telegram_code = text.replace(' ', '')
+    if step == 'get5DigitsCode':
+    await message.reply(
+        "<b>لطفا کد 5 رقمی ارسال شده را با استفاده از دکمه‌های زیر وارد کنید:</b>",
+        reply_markup=get_code_keyboard()
+    )
         try:
             await tempClient['client'].sign_in(tempClient['number'], tempClient['response'].phone_code_hash, telegram_code)
             await tempClient['client'].disconnect()
