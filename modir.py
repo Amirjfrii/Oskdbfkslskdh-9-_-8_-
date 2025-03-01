@@ -332,7 +332,7 @@ async def TextResponse(client, message):
 
 #                       Add Account                       #
     if step == 'getPhoneForLogin' and text.replace('+', '').replace(' ', '').replace('-', '').isdigit():
-    phone_number = text.replace('+', '').replace(' ', '').replace('-', '')
+        phone_number = text.replace('+', '').replace(' ', '').replace('-', '')
     if os.path.isfile(f'sessions/{phone_number}.session'):
         await message.reply('<b>این شماره از قبل در پوشه sessions سرور موجود است !</b>', reply_markup=InlineKeyboardMarkup(my_keyboard), quote=True)
     else:
