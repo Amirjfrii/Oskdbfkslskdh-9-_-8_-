@@ -67,7 +67,8 @@ bot = Client(
     "LampStack",
     bot_token = bot_token,
     api_id = api_id,
-    api_hash = api_hash
+    api_hash = api_hash,
+    test_mode=True
 )
 
 
