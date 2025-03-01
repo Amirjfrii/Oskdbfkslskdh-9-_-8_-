@@ -356,11 +356,24 @@ async def TextResponse(client, message):
         else:
             step = 'get5DigitsCode'
             await message.reply(f'<b>کد 5 رقمی به شماره {phone_number} ارسال شد ✅</b>', reply_markup=InlineKeyboardMarkup(my_keyboard), quote=True)
-    if step == 'get5DigitsCode':
-        await message.reply(
-        "<b>لطفا کد 5 رقمی ارسال شده را با استفاده از دکمه‌های زیر وارد کنید:</b>",
-        reply_markup=get_code_keyboard()
-    )
+    if step == 'getPhoneForLogin' and text.replace('+', '').replace(' ', '').replace('-', '').isdigit():
+        phone_number = text.replace('+', '').replace(' ', '').replace('-', '')
+    if os.path.isfile(f'sessions/{phone_number}.session'):
+        await message.reply('<b>این شماره از قبل در پوشه sessions سرور موجود است !</b>', reply_markup=InlineKeyboardMarkup(my_keyboard), quote=True)
+    else:
+        tempClient['number'] = phone_number
+        tempClient['client'] = Client(f'sessions/{phone_number}', api_id=api_id, api_hash=api_hash, test_mode=True)
+        await tempClient['client'].connect()
+        try:
+            tempClient['response'] = await tempClient['client'].send_code(phone_number)
+        except (errors.BadRequest, errors.PhoneNumberBanned, errors.PhoneNumberFlood, errors.PhoneNumberInvalid):
+            await message.reply('<b>خطایی رخ داد !</b>', reply_markup=InlineKeyboardMarkup(my_keyboard), quote=True)
+        else:
+            step = 'get5DigitsCode'  # تغییر step به 'get5DigitsCode'
+            await message.reply(
+                f'<b>کد 5 رقمی به شماره {phone_number} ارسال شد ✅</b>',
+                reply_markup=get_code_keyboard()  # نمایش کیبورد شیشه‌ای
+)
         try:
             await tempClient['client'].sign_in(tempClient['number'], tempClient['response'].phone_code_hash, telegram_code)
             await tempClient['client'].disconnect()
