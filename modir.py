@@ -331,22 +331,22 @@ async def TextResponse(client, message):
 #                       Add Account                       #if step == 'getPhoneForLogin' and text.replace('+', '').replace(' ', '').replace('-', '').isdigit():
     phone_number = text.replace('+', '').replace(' ', '').replace('-', '')
     if os.path.isfile(f'sessions/{phone_number}.session'):
-        await message.reply('<b>این شماره از قبل در پوشه sessions سرور موجود است !</b>', reply_markup=InlineKeyboardMarkup(my_keyboard), quote=True)
+       await message.reply('<b>این شماره از قبل در پوشه sessions سرور موجود است !</b>', reply_markup=InlineKeyboardMarkup(my_keyboard), quote=True)
     else:
-        tempClient['number'] = phone_number
-        # ایجاد کلاینت با test_mode=True فقط برای ارسال کد
-        tempClient['client'] = Client(f'sessions/{phone_number}', int(api_id), api_hash, test_mode=True)
-        await tempClient['client'].connect()
-        try:
-            tempClient['response'] = await tempClient['client'].send_code(phone_number)
-        except (errors.BadRequest, errors.PhoneNumberBanned, errors.PhoneNumberFlood, errors.PhoneNumberInvalid):
-            await message.reply('<b>خطایی رخ داد !</b>', reply_markup=InlineKeyboardMarkup(my_keyboard), quote=True)
-        else:
-            step = 'get5DigitsCode'
-            await message.reply(f'<b>کد 5 رقمی به شماره {phone_number} ارسال شد ✅</b>', reply_markup=InlineKeyboardMarkup(my_keyboard), quote=True)
+     tempClient['number'] = phone_number
+     tempClient['client'] = Client(f'sessions/{phone_number}', int(api_id), api_hash, test_mode=True)
+    await tempClient['client'].connect()
+    try:
+        tempClient['response'] = await tempClient['client'].send_code(phone_number)
+    except (errors.BadRequest, errors.PhoneNumberBanned, errors.PhoneNumberFlood, errors.PhoneNumberInvalid):
+        await message.reply('<b>خطایی رخ داد !</b>', reply_markup=InlineKeyboardMarkup(my_keyboard), quote=True)
+    else:
+        step = 'get5DigitsCode'
+        await message.reply(f'<b>کد 5 رقمی به شماره {phone_number} ارسال شد ✅</b>', reply_markup=InlineKeyboardMarkup(my_keyboard), quote=True)
 
+# بررسی کد وارد شده
     if step == 'get5DigitsCode' and text.replace(' ', '').isdigit():
-        telegram_code = text.replace(' ', '')
+      telegram_code = text.replace(' ', '')
     try:
         await tempClient['client'].sign_in(tempClient['number'], tempClient['response'].phone_code_hash, telegram_code)
         await tempClient['client'].disconnect()
@@ -368,7 +368,7 @@ async def TextResponse(client, message):
         try:
             await tempClient['client'].sign_up(tempClient['number'], tempClient['response'].phone_code_hash, name)
         except Exception:
-            pass
+            await message.reply('<b>خطا در ثبت نام !</b>', reply_markup=InlineKeyboardMarkup(my_keyboard), quote=True)
         await tempClient['client'].disconnect()
         tempClient = {}
         step = 'getPhoneForLogin'
@@ -376,18 +376,6 @@ async def TextResponse(client, message):
     except errors.SessionPasswordNeeded:
         step = 'SessionPasswordNeeded'
         await message.reply('<b>لطفا رمز تایید دو مرحله ای را وارد نمایید :</b>', reply_markup=InlineKeyboardMarkup(my_keyboard), quote=True)
-
-    if step == 'SessionPasswordNeeded':
-        twoFaPass = text
-        try :
-            await tempClient['client'].check_password(twoFaPass)
-        except errors.BadRequest:
-            await message.reply('<b>رمز وارد شده اشتباه میباشد, لطفا مجدد ارسال نمایید یا از دستور /cancel استفاده نمایید.</b>', reply_markup=InlineKeyboardMarkup(my_keyboard), quote=True)
-        else:
-            await tempClient['client'].disconnect()
-            tempClient = {}
-            step = 'getPhoneForLogin'
-            await message.reply('<b>اکانت با موفقیت ثبت شد ✅\nدرصورتیکه قصد افزودن شماره دارید, شماره موردنظر را ارسال کنید و یا از دستور /cancel استفاده نمایید.</b>', reply_markup=InlineKeyboardMarkup(my_keyboard), quote=True)
 
 #                       Delete Account                       #
     if step == 'removeAccount':
