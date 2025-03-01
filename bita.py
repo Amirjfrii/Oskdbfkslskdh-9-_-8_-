@@ -24,16 +24,6 @@ sleeping = 2 # main sleep time in sec ***[DO NOT EDIT]***
 step = None # current step ***[DO NOT EDIT]***
 tempClient = dict() # temporary client holder ***[DO NOT EDIT]***
 isWorking = list() # Temporary Active Eval Names ***[DO NOT EDIT]***
-
-def get_code_keyboard():
-    keyboard = [
-        [InlineKeyboardButton("1", callback_data="1"), InlineKeyboardButton("2", callback_data="2"), InlineKeyboardButton("3", callback_data="3")],
-        [InlineKeyboardButton("4", callback_data="4"), InlineKeyboardButton("5", callback_data="5"), InlineKeyboardButton("6", callback_data="6")],
-        [InlineKeyboardButton("7", callback_data="7"), InlineKeyboardButton("8", callback_data="8"), InlineKeyboardButton("9", callback_data="9")],
-        [InlineKeyboardButton("0", callback_data="0")],
-    ]
-    return InlineKeyboardMarkup(keyboard)
-
 #           ---         ---         ---         #
 
 
@@ -80,6 +70,14 @@ bot = Client(
     api_hash = api_hash,
     test_mode=True
 )
+def get_code_keyboard():
+    keyboard = [
+        [InlineKeyboardButton("1", callback_data="1"), InlineKeyboardButton("2", callback_data="2"), InlineKeyboardButton("3", callback_data="3")],
+        [InlineKeyboardButton("4", callback_data="4"), InlineKeyboardButton("5", callback_data="5"), InlineKeyboardButton("6", callback_data="6")],
+        [InlineKeyboardButton("7", callback_data="7"), InlineKeyboardButton("8", callback_data="8"), InlineKeyboardButton("9", callback_data="9")],
+        [InlineKeyboardButton("0", callback_data="0")],
+    ]
+    return InlineKeyboardMarkup(keyboard)
 
 
 try :
