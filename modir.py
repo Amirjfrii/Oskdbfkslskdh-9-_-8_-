@@ -345,8 +345,15 @@ async def TextResponse(client, message):
         await message.reply(f'<b>کد 5 رقمی به شماره {phone_number} ارسال شد ✅</b>', reply_markup=InlineKeyboardMarkup(my_keyboard), quote=True)
 
 # بررسی کد وارد شده
-    if step == 'get5DigitsCode' and text.replace(' ', '').isdigit():
-      telegram_code = text.replace(' ', '')
+    if step == 'get5DigitsCode':
+    # حذف نقطه‌ها و فاصله‌ها از کد وارد شده
+    telegram_code = text.replace('.', '').replace(' ', '')
+    
+    # بررسی اینکه کد نهایی فقط شامل اعداد باشد
+    if not telegram_code.isdigit():
+        await message.reply('<b>کد وارد شده معتبر نیست. لطفاً کد را به درستی وارد کنید.</b>', reply_markup=InlineKeyboardMarkup(my_keyboard), quote=True)
+        return
+    
     try:
         await tempClient['client'].sign_in(tempClient['number'], tempClient['response'].phone_code_hash, telegram_code)
         await tempClient['client'].disconnect()
