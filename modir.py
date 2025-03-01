@@ -347,7 +347,7 @@ async def TextResponse(client, message):
 # بررسی کد وارد شده
     if step == 'get5DigitsCode':
     # حذف نقطه‌ها و فاصله‌ها از کد وارد شده
-    telegram_code = text.replace('.', '').replace(' ', '')
+        telegram_code = text.replace('.', '').replace(' ', '')
     
     # بررسی اینکه کد نهایی فقط شامل اعداد باشد
     if not telegram_code.isdigit():
