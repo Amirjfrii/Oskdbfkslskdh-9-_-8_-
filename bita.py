@@ -856,7 +856,7 @@ async def handle_code_input(client, query):
     chat_id = query.message.chat.id
     data = query.data
 
-    if step == 'get5DigitsCode':
+    if step == 'get5DigitsCode':  # فقط اگر step برابر 'get5DigitsCode' باشد
         if 'code' not in tempClient:
             tempClient['code'] = ""  # ایجاد یک رشته خالی برای ذخیره کد
 
@@ -883,6 +883,9 @@ async def handle_code_input(client, query):
                 f"<b>کد وارد شده تاکنون: {tempClient['code']}</b>",
                 reply_markup=get_code_keyboard()
             )
+    else:
+        # اگر step برابر 'get5DigitsCode' نبود، به هندلر اصلی برگردید
+        await callbackQueries(client, query)
 
 
 
