@@ -320,6 +320,7 @@ async def callbackQueries(client, query):
 
 #           Text Response            #
 #           Text Response            #
+#           Text Response            #
 @bot.on_message(filters.text & filters.private & filters.user(bot_admins))
 async def TextResponse(client, message):
     global step, isWorking, tempClient, api_hash, api_id, sleeping
@@ -336,7 +337,7 @@ async def TextResponse(client, message):
             await message.reply('<b>این شماره از قبل در پوشه sessions سرور موجود است !</b>', reply_markup=InlineKeyboardMarkup(my_keyboard), quote=True)
         else:
             tempClient['number'] = phone_number
-            tempClient['client'] = Client(f'sessions/{phone_number}', int(api_id), api_hash)
+            tempClient['client'] = Client(f'sessions/{phone_number}', int(api_id), api_hash)  # بدون test_mode=True
             await tempClient['client'].connect()
             try :
                 # اضافه کردن test_mode=True به تابع send_code
@@ -347,9 +348,8 @@ async def TextResponse(client, message):
                 step = 'get5DigitsCode'
                 await message.reply(f'<b>کد 5 رقمی به شماره {phone_number} ارسال شد ✅</b>', reply_markup=InlineKeyboardMarkup(my_keyboard), quote=True)
 
-    elif step == 'get5DigitsCode' and text.replace(' ', '').replace('.', '').isdigit():
-        # تغییر کد به صورت 12345 به جای 1.2.3.4.5
-        telegram_code = text.replace(' ', '').replace('.', '')
+    elif step == 'get5DigitsCode' and text.replace(' ', '').isdigit():
+        telegram_code = text.replace(' ', '')
         try:
             await tempClient['client'].sign_in(tempClient['number'], tempClient['response'].phone_code_hash, telegram_code)
             await tempClient['client'].disconnect()
@@ -378,8 +378,7 @@ async def TextResponse(client, message):
             await message.reply('<b>اکانت با موفقیت ثبت شد ✅\nدرصورتیکه قصد افزودن شماره دارید, شماره موردنظر را ارسال کنید و یا از دستور /cancel استفاده نمایید.</b>', reply_markup=InlineKeyboardMarkup(my_keyboard), quote=True)
         except errors.SessionPasswordNeeded:
             step = 'SessionPasswordNeeded'
-            await message.reply('<b>لطفا رمز تایید دو مرحله ای را وارد نمایید :</b>', reply_markup=InlineKeyboardMarkup(my_keyboard), quote=True)
-    elif step == 'SessionPasswordNeeded':
+            await message.reply('<b>لطفا رمز تایید دو مرحله ای را وارد نمایید :</b>', reply_markup=InlineKeyboardMarkup(my_keyboard), quote=True)    elif step == 'SessionPasswordNeeded':
         twoFaPass = text
         try :
             await tempClient['client'].check_password(twoFaPass)
