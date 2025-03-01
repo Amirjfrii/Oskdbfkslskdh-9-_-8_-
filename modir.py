@@ -15,10 +15,10 @@ from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 
 
 #           ---         ---         ---         #
-api_id = 23703937 # main api id from my.telegram.org/apps
-api_hash = '779a983cfcccef536bbfd5ec66deb627' # main api hash from my.telegram.org/apps
-bot_token = '2200260147:AAFGYLlq8nIhQEzK3jqBThTB-yVpq2Gn9MY' # main bot token from @botFather
-bot_admins = [1495973057, 2200903945] # admin userID
+api_id = 000000000 # main api id from my.telegram.org/apps
+api_hash = 'XXXXXXXXXXXXXXXX' # main api hash from my.telegram.org/apps
+bot_token = 'XXXXXXXXXXXXXXXX' # main bot token from @botFather
+bot_admins = [000000000, 000000000] # admin userID
 #           ---         ---         ---         #
 sleeping = 2 # main sleep time in sec ***[DO NOT EDIT]***
 step = None # current step ***[DO NOT EDIT]***
@@ -67,8 +67,7 @@ bot = Client(
     "LampStack",
     bot_token = bot_token,
     api_id = api_id,
-    api_hash = api_hash,
-    test_mode=True
+    api_hash = api_hash
 )
 
 
@@ -328,61 +327,66 @@ async def TextResponse(client, message):
         [InlineKeyboardButton('🔙', callback_data='backToMenu')],
     ]
 
-#                       Add Account                       #if step == 'getPhoneForLogin' and text.replace('+', '').replace(' ', '').replace('-', '').isdigit():
-    phone_number = text.replace('+', '').replace(' ', '').replace('-', '')
-    if os.path.isfile(f'sessions/{phone_number}.session'):
-       await message.reply('<b>این شماره از قبل در پوشه sessions سرور موجود است !</b>', reply_markup=InlineKeyboardMarkup(my_keyboard), quote=True)
-    else:
-     tempClient['number'] = phone_number
-     tempClient['client'] = Client(f'sessions/{phone_number}', int(api_id), api_hash, test_mode=True)
-    await tempClient['client'].connect()
-    try:
-        tempClient['response'] = await tempClient['client'].send_code(phone_number)
-    except (errors.BadRequest, errors.PhoneNumberBanned, errors.PhoneNumberFlood, errors.PhoneNumberInvalid):
-        await message.reply('<b>خطایی رخ داد !</b>', reply_markup=InlineKeyboardMarkup(my_keyboard), quote=True)
-    else:
-        step = 'get5DigitsCode'
-        await message.reply(f'<b>کد 5 رقمی به شماره {phone_number} ارسال شد ✅</b>', reply_markup=InlineKeyboardMarkup(my_keyboard), quote=True)
+#                       Add Account                       #
+    if step == 'getPhoneForLogin' and text.replace('+', '').replace(' ', '').replace('-', '').isdigit():
+        phone_number = text.replace('+', '').replace(' ', '').replace('-', '')
+        if os.path.isfile(f'sessions/{phone_number}.session'):
+            await message.reply('<b>این شماره از قبل در پوشه sessions سرور موجود است !</b>', reply_markup=InlineKeyboardMarkup(my_keyboard), quote=True)
+        else:
+            tempClient['number'] = phone_number
+            tempClient['client'] = Client(f'sessions/{phone_number}', int(api_id), api_hash)
+            await tempClient['client'].connect()
+            try :
+                tempClient['response'] = await tempClient['client'].send_code(phone_number)
+            except (errors.BadRequest, errors.PhoneNumberBanned, errors.PhoneNumberFlood, errors.PhoneNumberInvalid):
+                await message.reply('<b>خطایی رخ داد !</b>', reply_markup=InlineKeyboardMarkup(my_keyboard), quote=True)
+            else:
+                step = 'get5DigitsCode'
+                await message.reply(f'<b>کد 5 رقمی به شماره {phone_number} ارسال شد ✅</b>', reply_markup=InlineKeyboardMarkup(my_keyboard), quote=True)
 
-# بررسی کد وارد شده
-    if step == 'get5DigitsCode':
-    # حذف نقطه‌ها و فاصله‌ها از کد وارد شده
-        telegram_code = text.replace('.', '').replace(' ', '')
-    
-    # بررسی اینکه کد نهایی فقط شامل اعداد باشد
-    if not telegram_code.isdigit():
-        await message.reply('<b>کد وارد شده معتبر نیست. لطفاً کد را به درستی وارد کنید.</b>', reply_markup=InlineKeyboardMarkup(my_keyboard), quote=True)
-        return
-    
-    try:
-        await tempClient['client'].sign_in(tempClient['number'], tempClient['response'].phone_code_hash, telegram_code)
-        await tempClient['client'].disconnect()
-        tempClient = {}
-        step = 'getPhoneForLogin'
-        await message.reply('<b>اکانت با موفقیت ثبت شد ✅\nدرصورتیکه قصد افزودن شماره دارید, شماره موردنظر را ارسال کنید و یا از دستور /cancel استفاده نمایید.</b>', reply_markup=InlineKeyboardMarkup(my_keyboard), quote=True)
-    except errors.PhoneCodeExpired:
-        await tempClient['client'].disconnect()
-        tempClient = {}
-        step = None
-        await message.reply('<b>کد ارسال شده منقضی شده است, لطفا عملیات را /cancel کنید و مجدد تلاش کنید.</b>', reply_markup=InlineKeyboardMarkup(my_keyboard), quote=True)
-    except errors.PhoneCodeInvalid:
-        await message.reply('<b>کد وارد شده اشتباه است یا منقضی شده, لطفا از دستور /cancel استفاده نمایید و یا کد درست را ارسال کنید.</b>', reply_markup=InlineKeyboardMarkup(my_keyboard), quote=True)
-    except errors.BadRequest:
-        await message.reply('<b>کد وارد شده اشتباه است یا منقضی شده, لطفا از دستور /cancel استفاده نمایید و یا کد درست را ارسال کنید.</b>', reply_markup=InlineKeyboardMarkup(my_keyboard), quote=True)
-    except errors.AuthKeyUnregistered:
-        await asyncio.sleep(3)
-        name = await randomString()
+    elif step == 'get5DigitsCode' and text.replace(' ', '').isdigit():
+        telegram_code = text.replace(' ', '')
         try:
-            await tempClient['client'].sign_up(tempClient['number'], tempClient['response'].phone_code_hash, name)
-        except Exception:
-            await message.reply('<b>خطا در ثبت نام !</b>', reply_markup=InlineKeyboardMarkup(my_keyboard), quote=True)
-        await tempClient['client'].disconnect()
-        tempClient = {}
-        step = 'getPhoneForLogin'
-        await message.reply('<b>اکانت با موفقیت ثبت شد ✅\nدرصورتیکه قصد افزودن شماره دارید, شماره موردنظر را ارسال کنید و یا از دستور /cancel استفاده نمایید.</b>', reply_markup=InlineKeyboardMarkup(my_keyboard), quote=True)
-    except errors.SessionPasswordNeeded:
-        step = 'SessionPasswordNeeded'
-        await message.reply('<b>لطفا رمز تایید دو مرحله ای را وارد نمایید :</b>', reply_markup=InlineKeyboardMarkup(my_keyboard), quote=True)
+            await tempClient['client'].sign_in(tempClient['number'], tempClient['response'].phone_code_hash, telegram_code)
+            await tempClient['client'].disconnect()
+            tempClient = {}
+            step = 'getPhoneForLogin'
+            await message.reply('<b>اکانت با موفقیت ثبت شد ✅\nدرصورتیکه قصد افزودن شماره دارید, شماره موردنظر را ارسال کنید و یا از دستور /cancel استفاده نمایید.</b>', reply_markup=InlineKeyboardMarkup(my_keyboard), quote=True)
+        except errors.PhoneCodeExpired :
+            await tempClient['client'].disconnect()
+            tempClient = {}
+            step = None
+            await message.reply('<b>کد ارسال شده منقضی شده است, لطفا عملیات را /cancel کنید و مجدد تلاش کنید.</b>', reply_markup=InlineKeyboardMarkup(my_keyboard), quote=True)
+        except errors.PhoneCodeInvalid :
+            await message.reply('<b>کد وارد شده اشتباه است یا منقضی شده, لطفا از دستور /cancel استفاده نمایید و یا کد درست را ارسال کنید.</b>', reply_markup=InlineKeyboardMarkup(my_keyboard), quote=True)
+        except errors.BadRequest :
+            await message.reply('<b>کد وارد شده اشتباه است یا منقضی شده, لطفا از دستور /cancel استفاده نمایید و یا کد درست را ارسال کنید.</b>', reply_markup=InlineKeyboardMarkup(my_keyboard), quote=True)
+        except errors.AuthKeyUnregistered :
+            await asyncio.sleep(3)
+            name = await randomString()
+            try:
+                await tempClient['client'].sign_up(tempClient['number'], tempClient['response'].phone_code_hash, name)
+            except Exception:
+                pass
+            await tempClient['client'].disconnect()
+            tempClient = {}
+            step = 'getPhoneForLogin'
+            await message.reply('<b>اکانت با موفقیت ثبت شد ✅\nدرصورتیکه قصد افزودن شماره دارید, شماره موردنظر را ارسال کنید و یا از دستور /cancel استفاده نمایید.</b>', reply_markup=InlineKeyboardMarkup(my_keyboard), quote=True)
+        except errors.SessionPasswordNeeded:
+            step = 'SessionPasswordNeeded'
+            await message.reply('<b>لطفا رمز تایید دو مرحله ای را وارد نمایید :</b>', reply_markup=InlineKeyboardMarkup(my_keyboard), quote=True)
+
+    elif step == 'SessionPasswordNeeded':
+        twoFaPass = text
+        try :
+            await tempClient['client'].check_password(twoFaPass)
+        except errors.BadRequest:
+            await message.reply('<b>رمز وارد شده اشتباه میباشد, لطفا مجدد ارسال نمایید یا از دستور /cancel استفاده نمایید.</b>', reply_markup=InlineKeyboardMarkup(my_keyboard), quote=True)
+        else:
+            await tempClient['client'].disconnect()
+            tempClient = {}
+            step = 'getPhoneForLogin'
+            await message.reply('<b>اکانت با موفقیت ثبت شد ✅\nدرصورتیکه قصد افزودن شماره دارید, شماره موردنظر را ارسال کنید و یا از دستور /cancel استفاده نمایید.</b>', reply_markup=InlineKeyboardMarkup(my_keyboard), quote=True)
 
 #                       Delete Account                       #
     if step == 'removeAccount':
