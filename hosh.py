@@ -24,4 +24,5 @@ def echo_message(message):
 
 
 
-bot.polling()
+bot.infinity_polling()
+
