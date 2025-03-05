@@ -13,7 +13,7 @@ def echo_message(message):
         response = requests.get(api_url)
         response.raise_for_status()
         api_output = response.json().get('results')
-        bot.send_message(message.chat.id, api_output, business_connection_id=message.business_connection_id, parse_mode='HTML')
+        bot.send_message(message.chat.id, api_output, business_connection_id=message.business_connection_id, parse_mode='Markdown')
     except requests.exceptions.RequestException as e:
         bot.send_message(message.chat.id, f"Error: {e}", business_connection_id=message.business_connection_id)
 
