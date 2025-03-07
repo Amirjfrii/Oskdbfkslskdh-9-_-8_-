@@ -34,16 +34,11 @@ def send_welcome(message):
 def handle_instagram(message):
     try:
         url = message.text.split(' ')[1]  # جدا کردن لینک از دستور
-        api_url = f"https://haji.kavir-host-sub2.ir//api/insta.php?url={url}"
+        api_url = f"https://mr-amiri.ir/api/instagram?url={url}"
         response = requests.get(api_url)
         if response.status_code == 200:
             data = response.json()
-            
-            # بررسی اینکه آیا خروجی یک لیست است
-            if isinstance(data, list) and len(data) > 0:
-                media_url = data[0].get('media')  # فرض کنید لینک در اولین عنصر لیست است
-            else:
-                media_url = data.get('media')  # اگر خروجی دیکشنری است
+            media_url = data.get('media')  # استخراج لینک از کلید 'media'
             
             if media_url:
                 # دانلود فایل
