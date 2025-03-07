@@ -125,7 +125,7 @@ def handle_ai(message):
     try:
         text = message.text.replace('هوش', '').strip()  # حذف کلمه "هوش" از متن
         sender_id = message.from_user.id  # آیدی کاربر
-        api_url = f"backupapi.s6.viptelbot.top/advancedai/save?sender={sender_id}&text={text}"
+        api_url = f"https://backupapi.s6.viptelbot.top/advancedai/save?sender={sender_id}&text={text}"
         response = requests.get(api_url)
         if response.status_code == 200:
             bot.reply_to(message, response.text)  # ارسال پاسخ هوش مصنوعی
