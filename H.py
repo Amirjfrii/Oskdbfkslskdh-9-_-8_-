@@ -6,7 +6,7 @@ import requests
 # تنظیمات API تلگرام
 api_id = 'YOUR_API_ID'  # از my.telegram.org دریافت کنید
 api_hash = 'YOUR_API_HASH'  # از my.telegram.org دریافت کنید
-bot_token = 'YOUR_BOT_TOKEN'  # توکن ربات شما
+bot_token = '7729006326:AAHFgany1VpIVigtdAL7x5IvDjYwJ5eWpkA'  # توکن ربات شما
 
 # تنظیمات API های شما (برای اینستاگرام و تیک‌تاک)
 INSTA_API = "https://mr-amiri.ir/api/instagram?url="
