@@ -4,8 +4,8 @@ import os
 import requests
 
 # تنظیمات API تلگرام
-api_id = 'YOUR_API_ID'  # از my.telegram.org دریافت کنید
-api_hash = 'YOUR_API_HASH'  # از my.telegram.org دریافت کنید
+api_id = '22051826'  # از my.telegram.org دریافت کنید
+api_hash = '713ee0c13c60e46ecf2f9c3af4a7694b'  # از my.telegram.org دریافت کنید
 bot_token = '7729006326:AAHFgany1VpIVigtdAL7x5IvDjYwJ5eWpkA'  # توکن ربات شما
 
 # تنظیمات API های شما (برای اینستاگرام و تیک‌تاک)
