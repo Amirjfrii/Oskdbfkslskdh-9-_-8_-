@@ -22,7 +22,7 @@ def download_file(url, file_name):
     return False
 
 # ایجاد کلاینت Telethon با توکن ربات
-client = TelegramClient('bot_session', api_id=22051826, api_hash=None).start(bot_token=bot_token)
+client = TelegramClient('bot_session', api_id=22051826, api_hash="713ee0c13c60e46ecf2f9c3af4a7694b").start(bot_token=bot_token)
 
 # رویداد دریافت پیام
 @client.on(events.NewMessage)
