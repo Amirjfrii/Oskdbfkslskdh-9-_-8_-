@@ -150,6 +150,115 @@ async def handle_callback(event):
     try:
         data = event.data.decode('utf-8')
         if data.startswith('yt:'):
+            # تقسیم داده‌ها به درستی
+            parts = data.split(':')
+            if len(parts) == 3:  # مطمئن شوید که ۳ بخش وجود دارد
+                _, itag, url = parts
+                await event.edit("در حال دانلود ویدیو... لطفاً منتظر بمانید. ⏳")
+                
+                # دانلود ویدیو
+                file_name = download_youtube_video(url, int(itag))
+                if file_name:
+                    # ارسال ویدیو به کاربر
+                    await client.send_file(event.chat_id, file_name)
+                    os.remove(file_name)
+                else:
+                    await event.edit("خطا در دانلود ویدیو. لطفاً دوباره تلاش کنید. 😢")
+            else:
+                await event.edit("خطا در پردازش درخواست. لطفاً دوباره تلاش کنید. 😢")
+    except Exception as e:
+        await event.edit(f"خطا: {e}")
+
+# شروع ربات
+print("ربات فعال شد! 🤖")
+with client:
+    client.run_until_disconnected()            api_url = INSTA_API + url
+            response = requests.get(api_url)
+            if response.status_code == 200:
+                data = response.json()
+                if isinstance(data, list) and len(data) > 0:
+                    media_url = data[0].get('media')
+                    if media_url:
+                        file_name = "instagram_video.mp4"
+                        if download_file(media_url, file_name):
+                            await client.send_file(event.chat_id, file_name)
+                            os.remove(file_name)
+                        else:
+                            await event.reply("خطا در دانلود فایل. 😢")
+                    else:
+                        await event.reply("لینک دانلود یافت نشد. 😢")
+                else:
+                    await event.reply("خطا: ساختار خروجی API نامعتبر است. 😢")
+            else:
+                await event.reply("خطا در ارتباط با سرور. لطفا دوباره تلاش کنید.")
+
+        # یوتیوب دانلودر
+        elif text.startswith('youtube'):
+            url = text.split(' ')[1]
+            title, qualities = get_youtube_qualities(url)
+            if not qualities:
+                await event.reply("خطا در دریافت کیفیت‌های ویدیو. لطفاً لینک را بررسی کنید. 😢")
+                return
+            
+            # ایجاد دکمه‌های شیشه‌ای برای کیفیت‌ها
+            buttons = []
+            for resolution, itag in qualities:
+                buttons.append([Button.inline(resolution, data=f"yt:{itag}:{url}")])
+            
+            await event.reply(f"کیفیت‌های موجود برای ویدیو: {title}\nلطفاً یک کیفیت انتخاب کنید:", buttons=buttons)
+
+        # تیک‌تاک دانلودر
+        elif text.startswith('tiktok'):
+            url = text.split(' ')[1]
+            api_url = TIKTOK_API + url
+            response = requests.get(api_url)
+            if response.status_code == 200:
+                data = response.json()
+                download_url = data.get('download_url')
+                if download_url:
+                    file_name = "tiktok_video.mp4"
+                    if download_file(download_url, file_name):
+                        await client.send_file(event.chat_id, file_name)
+                        os.remove(file_name)
+                    else:
+                        await event.reply("خطا در دانلود فایل. 😢")
+                else:
+                    await event.reply("لینک دانلود یافت نشد. 😢")
+            else:
+                await event.reply("خطا در ارتباط با سرور. لطفا دوباره تلاش کنید.")
+
+        # هوش مصنوعی
+        elif text.startswith('هوش'):
+            user_text = text.replace('هوش', '').strip()
+            api_url = AI_API.format(sender_id, user_text)
+            response = requests.get(api_url)
+            if response.status_code == 200:
+                await event.reply(response.text)
+            else:
+                await event.reply("خطا در ارتباط با سرور هوش مصنوعی. لطفا دوباره تلاش کنید.")
+
+        # دستور start
+        elif text == '/start':
+            await event.reply("سلام! به ربات همه‌کاره خوش آمدید. 🚀\n\n"
+                             "دستورات موجود:\n"
+                             "1. دانلود از اینستاگرام: ارسال لینک با عبارت `insta` قبل از آن.\n"
+                             "2. دانلود از یوتیوب: ارسال لینک با عبارت `youtube` قبل از آن.\n"
+                             "3. دانلود از تیک‌تاک: ارسال لینک با عبارت `tiktok` قبل از آن.\n"
+                             "4. هوش مصنوعی: ارسال متن با عبارت `هوش` قبل از آن.\n\n"
+                             "مثال:\n"
+                             "insta https://www.instagram.com/p/example\n"
+                             "youtube https://www.youtube.com/watch?v=example\n"
+                             "هوش سلام چطوری؟")
+
+    except Exception as e:
+        await event.reply(f"خطا: {e}")
+
+# رویداد کلیک روی دکمه‌های شیشه‌ای
+@client.on(events.CallbackQuery)
+async def handle_callback(event):
+    try:
+        data = event.data.decode('utf-8')
+        if data.startswith('yt:'):
             _, itag, url = data.split(':')
             await event.edit("در حال دانلود ویدیو... لطفاً منتظر بمانید. ⏳")
             
