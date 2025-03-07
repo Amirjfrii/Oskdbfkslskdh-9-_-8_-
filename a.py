@@ -3,7 +3,7 @@ import requests
 import os
 
 # تنظیمات توکن ربات
-bot_token = 'YOUR_BOT_TOKEN'  # توکن ربات خود را اینجا وارد کنید
+bot_token = '7740967401:AAHtUCvRkHzCYoq0gVD0C6Zi-lTFLRekVao'  # توکن ربات خود را اینجا وارد کنید
 
 # تنظیمات API های شما
 INSTA_API = "https://mr-amiri.ir/api/instagram?url="
