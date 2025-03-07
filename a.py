@@ -3,7 +3,7 @@ import requests
 import os
 
 # توکن ربات تلگرام شما
-TOKEN = 'YOUR_TELEGRAM_BOT_TOKEN'
+TOKEN = '7740967401:AAHtUCvRkHzCYoq0gVD0C6Zi-lTFLRekVao'
 bot = telebot.TeleBot(TOKEN)
 
 # تابع برای دانلود فایل از لینک
