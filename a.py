@@ -38,7 +38,14 @@ def handle_instagram(message):
         response = requests.get(api_url)
         if response.status_code == 200:
             data = response.json()
-            media_url = data.get('media')  # استخراج لینک از کلید 'media'
+            
+            # استخراج لینک از ساختار خروجی
+            if isinstance(data, list) and len(data) > 0:
+                media_info = data[0]  # اولین عنصر لیست
+                media_url = media_info.get('media')  # استخراج لینک از کلید 'media'
+            else:
+                bot.reply_to(message, "خطا: ساختار خروجی API نامعتبر است. 😢")
+                return
             
             if media_url:
                 # دانلود فایل
