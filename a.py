@@ -38,7 +38,13 @@ def handle_instagram(message):
         response = requests.get(api_url)
         if response.status_code == 200:
             data = response.json()
-            media_url = data.get('media')
+            
+            # بررسی اینکه آیا خروجی یک لیست است
+            if isinstance(data, list) and len(data) > 0:
+                media_url = data[0].get('media')  # فرض کنید لینک در اولین عنصر لیست است
+            else:
+                media_url = data.get('media')  # اگر خروجی دیکشنری است
+            
             if media_url:
                 # دانلود فایل
                 file_name = "instagram_video.mp4"
@@ -55,7 +61,6 @@ def handle_instagram(message):
             bot.reply_to(message, "خطا در ارتباط با سرور. لطفا دوباره تلاش کنید.")
     except Exception as e:
         bot.reply_to(message, f"خطا: {e}")
-
 # یوتیوب دانلودر
 @bot.message_handler(func=lambda message: message.text.startswith('youtube'))
 def handle_youtube(message):
