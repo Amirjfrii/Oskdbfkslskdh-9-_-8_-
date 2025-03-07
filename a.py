@@ -1,58 +1,132 @@
-from telebot import TeleBot
-from telebot.types import InlineKeyboardButton, InlineKeyboardMarkup, ReactionTypeEmoji
+import telebot
 import requests
+import os
 
-API_TOKEN = '7740967401:AAHtUCvRkHzCYoq0gVD0C6Zi-lTFLRekVao'
-bot = TeleBot(API_TOKEN)
+# توکن ربات تلگرام شما
+TOKEN = 'YOUR_TELEGRAM_BOT_TOKEN'
+bot = telebot.TeleBot(TOKEN)
 
-@bot.message_handler(func=lambda message: True)
-def handle_message(message):
-    text = message.text
-    if text.startswith('اینستا') or text.startswith('insta'):
-        url = text.split(' ')[1]
-        api_url = f'https://haji.kavir-host-sub2.ir//api/insta.php?url={url}'
+# تابع برای دانلود فایل از لینک
+def download_file(url, file_name):
+    response = requests.get(url, stream=True)
+    if response.status_code == 200:
+        with open(file_name, 'wb') as file:
+            for chunk in response.iter_content(chunk_size=1024):
+                file.write(chunk)
+        return True
+    return False
+
+# دستور start
+@bot.message_handler(commands=['start'])
+def send_welcome(message):
+    bot.reply_to(message, "سلام! به ربات همه‌کاره خوش آمدید. 🚀\n\n"
+                          "دستورات موجود:\n"
+                          "1. دانلود از اینستاگرام: ارسال لینک با عبارت `insta` قبل از آن.\n"
+                          "2. دانلود از یوتیوب: ارسال لینک با عبارت `youtube` قبل از آن.\n"
+                          "3. دانلود از تیک‌تاک: ارسال لینک با عبارت `tiktok` قبل از آن.\n"
+                          "4. هوش مصنوعی: ارسال متن با عبارت `هوش` قبل از آن.\n\n"
+                          "مثال:\n"
+                          "insta https://www.instagram.com/p/example\n"
+                          "هوش سلام چطوری؟")
+
+# اینستاگرام دانلودر
+@bot.message_handler(func=lambda message: message.text.startswith('insta'))
+def handle_instagram(message):
+    try:
+        url = message.text.split(' ')[1]  # جدا کردن لینک از دستور
+        api_url = f"https://haji.kavir-host-sub2.ir//api/insta.php?url={url}"
         response = requests.get(api_url)
         if response.status_code == 200:
-            media_url = response.json().get('media')
-            bot.send_message(message.chat.id, media_url, parse_mode='Markdown')
+            data = response.json()
+            media_url = data.get('media')
+            if media_url:
+                # دانلود فایل
+                file_name = "instagram_video.mp4"
+                if download_file(media_url, file_name):
+                    # ارسال فایل به کاربر
+                    with open(file_name, 'rb') as file:
+                        bot.send_video(message.chat.id, file)
+                    os.remove(file_name)  # حذف فایل پس از ارسال
+                else:
+                    bot.reply_to(message, "خطا در دانلود فایل. 😢")
+            else:
+                bot.reply_to(message, "لینک دانلود یافت نشد. 😢")
         else:
-            bot.send_message(message.chat.id, "خطایی در دریافت اطلاعات از اینستاگرام رخ داد.")
-    
-    elif text.startswith('یوتیوب'):
-        url = text.split(' ')[1]
-        api_url = f'https://api.api4dev.ir/yt/download?url={url}'
+            bot.reply_to(message, "خطا در ارتباط با سرور. لطفا دوباره تلاش کنید.")
+    except Exception as e:
+        bot.reply_to(message, f"خطا: {e}")
+
+# یوتیوب دانلودر
+@bot.message_handler(func=lambda message: message.text.startswith('youtube'))
+def handle_youtube(message):
+    try:
+        url = message.text.split(' ')[1]  # جدا کردن لینک از دستور
+        api_url = f"https://api.api4dev.ir/yt/download?url={url}"
         response = requests.get(api_url)
         if response.status_code == 200:
             data = response.json()
             video_url = data.get('tunneled_link')
             title = data.get('title')
-            bot.send_message(message.chat.id, f"عنوان: {title}\nلینک: {video_url}", parse_mode='Markdown')
+            if video_url:
+                # دانلود فایل
+                file_name = "youtube_video.mp4"
+                if download_file(video_url, file_name):
+                    # ارسال فایل به کاربر
+                    with open(file_name, 'rb') as file:
+                        bot.send_video(message.chat.id, file, caption=title)
+                    os.remove(file_name)  # حذف فایل پس از ارسال
+                else:
+                    bot.reply_to(message, "خطا در دانلود فایل. 😢")
+            else:
+                bot.reply_to(message, "لینک دانلود یافت نشد. 😢")
         else:
-            bot.send_message(message.chat.id, "خطایی در دریافت اطلاعات از یوتیوب رخ داد.")
-    
-    elif text.startswith('تیک تاک'):
-        url = text.split(' ')[1]
-        api_url = f'https://api.api4dev.ir/tiktok?url={url}'
+            bot.reply_to(message, "خطا در ارتباط با سرور. لطفا دوباره تلاش کنید.")
+    except Exception as e:
+        bot.reply_to(message, f"خطا: {e}")
+
+# تیک‌تاک دانلودر
+@bot.message_handler(func=lambda message: message.text.startswith('tiktok'))
+def handle_tiktok(message):
+    try:
+        url = message.text.split(' ')[1]  # جدا کردن لینک از دستور
+        api_url = f"https://api.api4dev.ir/tiktok?url={url}"
         response = requests.get(api_url)
         if response.status_code == 200:
             data = response.json()
-            # فرض می‌کنیم لینک ویدیو در کلید 'video_url' قرار دارد
-            video_url = data.get('video_url', 'لینک ویدیو یافت نشد')
-            bot.send_message(message.chat.id, video_url, parse_mode='Markdown')
+            # فرض کنید لینک دانلود در کلید `download_url` قرار دارد
+            download_url = data.get('download_url')
+            if download_url:
+                # دانلود فایل
+                file_name = "tiktok_video.mp4"
+                if download_file(download_url, file_name):
+                    # ارسال فایل به کاربر
+                    with open(file_name, 'rb') as file:
+                        bot.send_video(message.chat.id, file)
+                    os.remove(file_name)  # حذف فایل پس از ارسال
+                else:
+                    bot.reply_to(message, "خطا در دانلود فایل. 😢")
+            else:
+                bot.reply_to(message, "لینک دانلود یافت نشد. 😢")
         else:
-            bot.send_message(message.chat.id, "خطایی در دریافت اطلاعات از تیک تاک رخ داد.")
-    
-    elif text.startswith('هوش'):
-        query = ' '.join(text.split(' ')[1:])
-        api_url = f"https://api4dev.ir/ai/saveai/black.php?userid={message.from_user.id}&Model=gpt-4o&text={requests.utils.quote(query)}"
+            bot.reply_to(message, "خطا در ارتباط با سرور. لطفا دوباره تلاش کنید.")
+    except Exception as e:
+        bot.reply_to(message, f"خطا: {e}")
+
+# هوش مصنوعی
+@bot.message_handler(func=lambda message: message.text.startswith('هوش'))
+def handle_ai(message):
+    try:
+        text = message.text.replace('هوش', '').strip()  # حذف کلمه "هوش" از متن
+        sender_id = message.from_user.id  # آیدی کاربر
+        api_url = f"backupapi.s6.viptelbot.top/advancedai/save?sender={sender_id}&text={text}"
         response = requests.get(api_url)
         if response.status_code == 200:
-            ai_response = response.json().get('response')
-            bot.send_message(message.chat.id, ai_response, parse_mode='Markdown')
+            bot.reply_to(message, response.text)  # ارسال پاسخ هوش مصنوعی
         else:
-            bot.send_message(message.chat.id, "خطایی در دریافت پاسخ از هوش مصنوعی رخ داد.")
-    
-    else:
-        bot.send_message(message.chat.id, "دستور شناخته نشد. لطفاً از دستورات معتبر استفاده کنید.")
+            bot.reply_to(message, "خطا در ارتباط با سرور هوش مصنوعی. لطفا دوباره تلاش کنید.")
+    except Exception as e:
+        bot.reply_to(message, f"خطا: {e}")
 
-bot.infinity_polling()
+# شروع ربات
+print("ربات فعال شد! 🤖")
+bot.polling()
