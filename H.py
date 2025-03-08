@@ -4,8 +4,8 @@ from pytubefix import YouTube
 
 # تنظیمات Telethon
 API_ID = '22051826'
-API_HASH = '713ee0c13c60e46ecf2f9c3af4a7694b'  # جایگزین کنید با API Hash خود از my.telegram.org
-BOT_TOKEN = '7729006326:AAHFgany1VpIVigtdAL7x5IvDjYwJ5eWpkA'  # جایگزین کنید با توکن ربات خود از @BotFather
+API_HASH = '713ee0c13c60e46ecf2f9c3af4a7694b'
+BOT_TOKEN = '7729006326:AAHFgany1VpIVigtdAL7x5IvDjYwJ5eWpkA'# جایگزین کنید با توکن ربات خود از @BotFather
 
 # ایجاد کلاینت Telethon
 client = TelegramClient('bot', API_ID, API_HASH).start(bot_token=BOT_TOKEN)
