@@ -12,7 +12,7 @@ client = TelegramClient('bot', API_ID, API_HASH).start(bot_token=BOT_TOKEN)
 
 # تابع برای دریافت کیفیت‌های ویدئو
 def get_video_qualities(url: str):
-    try:
+  try:
         yt = YouTube(url)
         streams = yt.streams.filter(progressive=True, file_extension='mp4')
         qualities = [(stream.resolution, stream.itag) for stream in streams]
