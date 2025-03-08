@@ -1,175 +1,97 @@
+import os
 from telethon import TelegramClient, events, Button
 from pytubefix import YouTube
-import os
-import requests
 
-# تنظیمات API تلگرام
-api_id = '22051826'  # از my.telegram.org دریافت کنید
-api_hash = '713ee0c13c60e46ecf2f9c3af4a7694b'  # از my.telegram.org دریافت کنید
-bot_token = '7729006326:AAHFgany1VpIVigtdAL7x5IvDjYwJ5eWpkA'  # توکن ربات شما
-
-# تنظیمات API های شما (برای اینستاگرام و تیک‌تاک)
-INSTA_API = "https://mr-amiri.ir/api/instagram?url="
-TIKTOK_API = "https://api.api4dev.ir/tiktok?url="
-AI_API = "https://backupapi.s6.viptelbot.top/advancedai/save?sender={}&text={}"
-
-# تابع برای دانلود فایل از لینک
-def download_file(url, file_name):
-    response = requests.get(url, stream=True)
-    if response.status_code == 200:
-        with open(file_name, 'wb') as file:
-            for chunk in response.iter_content(chunk_size=1024):
-                file.write(chunk)
-        return True
-    return False
-
-# تابع برای دریافت کیفیت‌های موجود یوتیوب
-def get_youtube_qualities(url):
-    try:
-        yt = YouTube(url)
-        streams = yt.streams.filter(progressive=True, file_extension='mp4')
-        qualities = []
-        for stream in streams:
-            resolution = stream.resolution
-            itag = stream.itag
-            qualities.append((resolution, itag))
-        return yt.title, qualities
-    except Exception as e:
-        print(f"خطا: {e}")
-        return None, []
-
-# تابع برای دانلود ویدیو یوتیوب با کیفیت انتخاب‌شده
-def download_youtube_video(url, itag, output_path="."):
-    try:
-        yt = YouTube(url)
-        stream = yt.streams.get_by_itag(itag)
-        file_name = stream.default_filename
-        stream.download(output_path)
-        return file_name
-    except Exception as e:
-        print(f"خطا در دانلود ویدیو: {e}")
-        return None
+# تنظیمات Telethon
+API_ID = ' 22051826'  # جایگزین کنید با API ID خود از my.telegram.org
+API_HASH = '713ee0c13c60e46ecf2f9c3af4a7694b'  # جایگزین کنید با API Hash خود از my.telegram.org
+BOT_TOKEN = '7729006326:AAHFgany1VpIVigtdAL7x5IvDjYwJ5eWpkA'  # جایگزین کنید با توکن ربات خود از @BotFather
 
 # ایجاد کلاینت Telethon
-client = TelegramClient('bot_session', api_id, api_hash).start(bot_token=bot_token)
+client = TelegramClient('bot', API_ID, API_HASH).start(bot_token=BOT_TOKEN)
 
-# رویداد دریافت پیام
+# تابع برای دریافت کیفیت‌های ویدئو
+def get_video_qualities(url: str):
+    try:
+        yt = YouTube(url)
+        streams = yt.streams.filter(progressive=True, file_extension='mp4')
+        qualities = [(stream.resolution, stream.itag) for stream in streams]
+        return qualities
+    except Exception as e:
+        print(f"خطا در دریافت کیفیت‌ها: {e}")
+        return None
+
+# تابع برای دانلود ویدئو با کیفیت مشخص
+def download_video(url: str, itag: int) -> str:
+    try:
+        yt = YouTube(url)
+        video = yt.streams.get_by_itag(itag)
+        video_path = video.download(output_path='downloads')
+        return video_path
+    except Exception as e:
+        print(f"خطا در دانلود ویدئو: {e}")
+        return None
+
+# دستور /start
+@client.on(events.NewMessage(pattern='/start'))
+async def start(event):
+    await event.respond("سلام! لینک ویدئوی یوتیوب را برای من بفرستید تا آن را دانلود کنم.")
+
+# دریافت لینک ویدئو از کاربر
 @client.on(events.NewMessage)
-async def handle_message(event):
-    try:
-        text = event.text
-        sender_id = event.sender_id
+async def handle_video_link(event):
+    chat_id = event.chat_id
+    video_url = event.text
 
-        # اینستاگرام دانلودر
-        if text.startswith('insta'):
-            url = text.split(' ')[1]
-            api_url = INSTA_API + url
-            response = requests.get(api_url)
-            if response.status_code == 200:
-                data = response.json()
-                if isinstance(data, list) and len(data) > 0:
-                    media_url = data[0].get('media')
-                    if media_url:
-                        file_name = "instagram_video.mp4"
-                        if download_file(media_url, file_name):
-                            await client.send_file(event.chat_id, file_name)
-                            os.remove(file_name)
-                        else:
-                            await event.reply("خطا در دانلود فایل. 😢")
-                    else:
-                        await event.reply("لینک دانلود یافت نشد. 😢")
-                else:
-                    await event.reply("خطا: ساختار خروجی API نامعتبر است. 😢")
-            else:
-                await event.reply("خطا در ارتباط با سرور. لطفا دوباره تلاش کنید.")
+    # بررسی اینکه آیا لینک معتبر است
+    if "youtube.com" not in video_url and "youtu.be" not in video_url:
+        await event.respond("لطفاً یک لینک معتبر یوتیوب ارسال کنید.")
+        return
 
-        # یوتیوب دانلودر
-        elif text.startswith('youtube'):
-            url = text.split(' ')[1]
-            title, qualities = get_youtube_qualities(url)
-            if not qualities:
-                await event.reply("خطا در دریافت کیفیت‌های ویدیو. لطفاً لینک را بررسی کنید. 😢")
-                return
-            
-            # ایجاد دکمه‌های شیشه‌ای برای کیفیت‌ها
-            buttons = []
-            for resolution, itag in qualities:
-                buttons.append([Button.inline(resolution, data=f"yt:{itag}:{url}")])
-            
-            await event.reply(f"کیفیت‌های موجود برای ویدیو: {title}\nلطفاً یک کیفیت انتخاب کنید:", buttons=buttons)
+    # دریافت کیفیت‌های ویدئو
+    qualities = get_video_qualities(video_url)
+    if not qualities:
+        await event.respond("خطا در دریافت کیفیت‌های ویدئو. لطفاً لینک را بررسی کنید.")
+        return
 
-        # تیک‌تاک دانلودر
-        elif text.startswith('tiktok'):
-            url = text.split(' ')[1]
-            api_url = TIKTOK_API + url
-            response = requests.get(api_url)
-            if response.status_code == 200:
-                data = response.json()
-                download_url = data.get('download_url')
-                if download_url:
-                    file_name = "tiktok_video.mp4"
-                    if download_file(download_url, file_name):
-                        await client.send_file(event.chat_id, file_name)
-                        os.remove(file_name)
-                    else:
-                        await event.reply("خطا در دانلود فایل. 😢")
-                else:
-                    await event.reply("لینک دانلود یافت نشد. 😢")
-            else:
-                await event.reply("خطا در ارتباط با سرور. لطفا دوباره تلاش کنید.")
+    # ایجاد دکمه‌های شیشه‌ای برای کیفیت‌ها
+    buttons = []
+    for quality, itag in qualities:
+        buttons.append([Button.inline(quality, data=f"quality:{itag}:{video_url}")])
 
-        # هوش مصنوعی
-        elif text.startswith('هوش'):
-            user_text = text.replace('هوش', '').strip()
-            api_url = AI_API.format(sender_id, user_text)
-            response = requests.get(api_url)
-            if response.status_code == 200:
-                await event.reply(response.text)
-            else:
-                await event.reply("خطا در ارتباط با سرور هوش مصنوعی. لطفا دوباره تلاش کنید.")
+    await event.respond("لطفاً کیفیت ویدئو را انتخاب کنید:", buttons=buttons)
 
-        # دستور start
-        elif text == '/start':
-            await event.reply("سلام! به ربات همه‌کاره خوش آمدید. 🚀\n\n"
-                             "دستورات موجود:\n"
-                             "1. دانلود از اینستاگرام: ارسال لینک با عبارت `insta` قبل از آن.\n"
-                             "2. دانلود از یوتیوب: ارسال لینک با عبارت `youtube` قبل از آن.\n"
-                             "3. دانلود از تیک‌تاک: ارسال لینک با عبارت `tiktok` قبل از آن.\n"
-                             "4. هوش مصنوعی: ارسال متن با عبارت `هوش` قبل از آن.\n\n"
-                             "مثال:\n"
-                             "insta https://www.instagram.com/p/example\n"
-                             "youtube https://www.youtube.com/watch?v=example\n"
-                             "هوش سلام چطوری؟")
-
-    except Exception as e:
-        await event.reply(f"خطا: {e}")
-
-# رویداد کلیک روی دکمه‌های شیشه‌ای
+# مدیریت انتخاب کیفیت توسط کاربر
 @client.on(events.CallbackQuery)
-async def handle_callback(event):
-    try:
-        data = event.data.decode('utf-8')
-        if data.startswith('yt:'):
-            # تقسیم داده‌ها به درستی
-            parts = data.split(':')
-            if len(parts) == 3:  # مطمئن شوید که ۳ بخش وجود دارد
-                _, itag, url = parts
-                await event.edit("در حال دانلود ویدیو... لطفاً منتظر بمانید. ⏳")
-                
-                # دانلود ویدیو
-                file_name = download_youtube_video(url, int(itag))
-                if file_name:
-                    # ارسال ویدیو به کاربر
-                    await client.send_file(event.chat_id, file_name)
-                    os.remove(file_name)
-                else:
-                    await event.edit("خطا در دانلود ویدیو. لطفاً دوباره تلاش کنید. 😢")
-            else:
-                await event.edit("خطا در پردازش درخواست. لطفاً دوباره تلاش کنید. 😢")
-    except Exception as e:
-        await event.edit(f"خطا: {e}")
+async def handle_quality_selection(event):
+    data = event.data.decode('utf-8')
+    if data.startswith("quality:"):
+        _, itag, video_url = data.split(":")
+        itag = int(itag)
 
-# شروع ربات
-print("ربات فعال شد! 🤖")
-with client:
-    client.run_until_disconnected()
+        # دانلود ویدئو با کیفیت انتخاب شده
+        await event.respond("در حال دانلود ویدئو... لطفاً منتظر بمانید.")
+        video_path = download_video(video_url, itag)
+
+        if video_path:
+            try:
+                # ارسال ویدئو به کاربر
+                await client.send_file(event.chat_id, video_path)
+                await event.respond("ویدئو با موفقیت ارسال شد!")
+            except Exception as e:
+                await event.respond(f"خطا در ارسال ویدئو: {e}")
+            finally:
+                # حذف فایل موقت
+                if os.path.exists(video_path):
+                    os.remove(video_path)
+        else:
+            await event.respond("خطا در دانلود ویدئو. لطفاً لینک را بررسی کنید.")
+
+# اجرای ربات
+if __name__ == "__main__":
+    # ایجاد پوشه downloads اگر وجود نداشته باشد
+    if not os.path.exists("downloads"):
+        os.makedirs("downloads")
+
+    print("ربات در حال اجرا است...")
+    client.run_until_disconnected()
