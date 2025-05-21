@@ -3,7 +3,7 @@ from telebot.types import InlineKeyboardButton, InlineKeyboardMarkup, ReactionTy
 import time
 import requests
 
-bot = TeleBot(token="2200135262:AAG5Bk9nK6N_qMcGhi5Q0gSyy3ClLFqZqDo/test")
+bot = TeleBot(token="2200135262:AAHRzxyl09pbKwK7t1-KiRToZthzG8wuCNg/test")
 
 
 @bot.business_message_handler(func=lambda message: True)
